@@ -17,21 +17,37 @@ interface VoiceInterfaceProps {
   initialMessages?: Message[];
 }
 
-const MemoizedMessage = memo(({ msg, index }: { msg: Message; index: number }) => (
+const isIOSDevice = () => {
+  if (typeof navigator === "undefined") return false;
+  return /iPad|iPhone|iPod/.test(navigator.userAgent);
+};
+
+const MemoizedMessage = memo(({ msg, index, onPlay }: { msg: Message; index: number; onPlay?: (text: string) => void }) => (
   <div className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
     {msg.role === "assistant" && (
       <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0">
         <Sparkles className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-white" />
       </div>
     )}
-    <div
-      className={`max-w-[90%] sm:max-w-[85%] lg:max-w-[80%] px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl text-sm sm:text-base leading-relaxed ${
-        msg.role === "user"
-          ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-br-md"
-          : "bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 rounded-bl-md"
-      }`}
-    >
-      {msg.content}
+    <div className="flex flex-col gap-1 max-w-[90%] sm:max-w-[85%] lg:max-w-[80%]">
+      <div
+        className={`px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl text-sm sm:text-base leading-relaxed ${
+          msg.role === "user"
+            ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-br-md"
+            : "bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 rounded-bl-md"
+        }`}
+      >
+        {msg.content}
+      </div>
+      {msg.role === "assistant" && isIOSDevice() && onPlay && (
+        <button
+          onClick={() => onPlay(msg.content)}
+          className="self-start flex items-center gap-1 px-2 py-1 text-xs text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors"
+        >
+          <Volume2 className="w-3 h-3" />
+          <span>Прослухати</span>
+        </button>
+      )}
     </div>
   </div>
 ));
@@ -161,6 +177,11 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
     };
   }, []);
 
+  const isIOS = useCallback(() => {
+    if (typeof navigator === "undefined") return false;
+    return /iPad|iPhone|iPod/.test(navigator.userAgent);
+  }, []);
+
   const speakResponse = useCallback((text: string) => {
     if (!synthRef.current) {
       setState("idle");
@@ -184,12 +205,17 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
       setTranscript("");
     };
 
-    utterance.onerror = () => {
+    utterance.onerror = (event) => {
+      console.error("Speech synthesis error:", event);
       setState("idle");
     };
 
+    if (isIOS() && synthRef.current.paused) {
+      synthRef.current.resume();
+    }
+
     synthRef.current.speak(utterance);
-  }, []);
+  }, [isIOS]);
 
   const stopListening = useCallback(() => {
     if (!recognitionRef.current) return;
@@ -398,7 +424,12 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
           ) : (
             <>
               {chatHistory.map((msg, index) => (
-                <MemoizedMessage key={`${msg.role}-${index}`} msg={msg} index={index} />
+                <MemoizedMessage 
+                  key={`${msg.role}-${index}`} 
+                  msg={msg} 
+                  index={index} 
+                  onPlay={isTextMode ? speakResponse : undefined}
+                />
               ))}
               <div ref={chatEndRef} />
             </>
