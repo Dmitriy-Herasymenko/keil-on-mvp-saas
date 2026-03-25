@@ -238,8 +238,15 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
     setState("processing");
 
     const userMessage: Message = { role: "user", content: text };
-    messagesRef.current.push(userMessage);
-    setChatHistory(prev => [...prev, userMessage]);
+    
+    const alreadyExists = messagesRef.current.some(
+      m => m.role === "user" && m.content === text
+    );
+    
+    if (!alreadyExists) {
+      messagesRef.current.push(userMessage);
+      setChatHistory(prev => [...prev, userMessage]);
+    }
 
     try {
       const res = await fetch("/api/chat", {
@@ -413,48 +420,71 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
         </button>
       </div>
 
-      <div className="w-full h-[50vh] sm:h-[55vh] lg:h-[60vh] min-h-[300px] max-h-[600px] mb-4 sm:mb-6 bg-white dark:bg-zinc-950 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800 overflow-hidden">
-        <div className="h-full overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
-          {chatHistory.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center mb-3 sm:mb-4">
-                <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-zinc-400" />
-              </div>
-              <p className="text-zinc-500 dark:text-zinc-400 text-sm">
-                Почніть розмову голосом або текстом
-              </p>
+      {isTextMode ? (
+        <>
+          <div className="w-full h-[50vh] sm:h-[55vh] lg:h-[60vh] min-h-[300px] max-h-[600px] mb-4 sm:mb-6 bg-white dark:bg-zinc-950 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+            <div className="h-full overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
+              {chatHistory.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center mb-3 sm:mb-4">
+                    <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-zinc-400" />
+                  </div>
+                  <p className="text-zinc-500 dark:text-zinc-400 text-sm">
+                    Почніть текстову розмову
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {chatHistory.map((msg, index) => (
+                    <MemoizedMessage 
+                      key={`${msg.role}-${index}`} 
+                      msg={msg} 
+                      index={index}
+                    />
+                  ))}
+                  <div ref={chatEndRef} />
+                </>
+              )}
             </div>
-          ) : (
-            <>
-              {chatHistory.map((msg, index) => (
-                <MemoizedMessage 
-                  key={`${msg.role}-${index}`} 
-                  msg={msg} 
-                  index={index} 
-                  onPlay={isTextMode ? speakResponse : undefined}
-                />
-              ))}
-              <div ref={chatEndRef} />
-            </>
-          )}
-        </div>
-      </div>
+          </div>
 
-      <div className="mb-4 sm:mb-6 text-center px-4">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={state}
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            className="text-xs sm:text-sm font-medium text-zinc-500 dark:text-zinc-400"
-          >
-            {getStateText(state)}
-          </motion.div>
-        </AnimatePresence>
-      </div>
+          <form onSubmit={handleTextSubmit} className="w-full max-w-2xl mx-auto flex gap-2 sm:gap-3">
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                value={textInput}
+                onChange={(e) => setTextInput(e.target.value)}
+                placeholder="Введіть повідомлення..."
+                className="w-full px-4 sm:px-5 py-3 sm:py-3.5 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 focus:border-transparent dark:text-white outline-none transition-all text-sm sm:text-base"
+                disabled={state === "processing"}
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={!textInput.trim() || state === "processing"}
+              className="px-4 sm:px-5 py-3 sm:py-3.5 bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 disabled:bg-zinc-300 dark:disabled:bg-zinc-800 disabled:cursor-not-allowed text-white dark:text-zinc-900 rounded-xl transition-all flex items-center justify-center"
+            >
+              <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+            </button>
+          </form>
+        </>
+      ) : (
+        <>
+          <div className="mb-4 sm:mb-6 text-center px-4">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={state}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="text-xs sm:text-sm font-medium text-zinc-500 dark:text-zinc-400"
+              >
+                {getStateText(state)}
+              </motion.div>
+            </AnimatePresence>
+          </div>
 
-      <div className="relative mb-4 sm:mb-6">
+          <div className="relative mb-4 sm:mb-6">
         <motion.button
           onClick={() => {
             if (state === "idle") {
@@ -569,26 +599,6 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
         )}
       </AnimatePresence>
 
-      <form onSubmit={handleTextSubmit} className="w-full max-w-2xl mx-auto mt-4 sm:mt-6 flex gap-2 sm:gap-3">
-        <div className="flex-1 relative">
-          <input
-            type="text"
-            value={textInput}
-            onChange={(e) => setTextInput(e.target.value)}
-            placeholder="Введіть повідомлення..."
-            className="w-full px-4 sm:px-5 py-3 sm:py-3.5 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 focus:border-transparent dark:text-white outline-none transition-all text-sm sm:text-base"
-            disabled={state === "processing"}
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={!textInput.trim() || state === "processing"}
-          className="px-4 sm:px-5 py-3 sm:py-3.5 bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 disabled:bg-zinc-300 dark:disabled:bg-zinc-800 disabled:cursor-not-allowed text-white dark:text-zinc-900 rounded-xl transition-all flex items-center justify-center"
-        >
-          <Send className="w-4 h-4 sm:w-5 sm:h-5" />
-        </button>
-      </form>
-
       <div className="mt-4 sm:mt-6 text-center">
         <p className="text-xs text-zinc-400 dark:text-zinc-500">
           {state === "idle" && "Натисніть мікрофон щоб почати"}
@@ -597,6 +607,8 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
           {state === "processing" && "Обробка..."}
         </p>
       </div>
+        </>
+      )}
     </div>
   );
 }
