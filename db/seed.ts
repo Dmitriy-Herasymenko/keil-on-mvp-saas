@@ -39,7 +39,6 @@ export async function seedUsers() {
   console.log("Seeding complete!");
 }
 
-// Run if executed directly
 if (require.main === module) {
   seedUsers().catch(console.error);
 }

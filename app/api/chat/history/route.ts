@@ -4,7 +4,6 @@ import { db } from "@/db";
 import { messages, chats } from "@/db/schema";
 import { eq, desc, and } from "drizzle-orm";
 
-// GET /api/chat/history - Get user's chats
 export async function GET(req: NextRequest) {
   try {
     const session = await auth();
@@ -19,7 +18,6 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const chatId = searchParams.get("chatId");
 
-    // If chatId provided, return messages for that chat
     if (chatId) {
       const chatMessages = await db.query.messages.findMany({
         where: eq(messages.chatId, chatId),
@@ -32,7 +30,6 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Otherwise return user's chats
     const userChats = await db.query.chats.findMany({
       where: eq(chats.userId, session.user.id),
       orderBy: desc(chats.lastMessageAt),
@@ -51,7 +48,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// DELETE /api/chat/history - Delete chat or all chats
 export async function DELETE(req: NextRequest) {
   try {
     const session = await auth();
@@ -67,7 +63,6 @@ export async function DELETE(req: NextRequest) {
     const chatId = searchParams.get("chatId");
 
     if (chatId) {
-      // Delete specific chat (cascade will delete messages)
       await db.delete(chats).where(
         and(
           eq(chats.id, chatId),
@@ -79,7 +74,6 @@ export async function DELETE(req: NextRequest) {
         message: "Чат видалено",
       });
     } else {
-      // Delete all user's chats
       await db.delete(chats).where(eq(chats.userId, session.user.id));
 
       return NextResponse.json({

@@ -28,7 +28,6 @@ export async function POST(req: NextRequest) {
 
     const { messages: userMessages, chatId, isVoice = false, saveToHistory = true } = await req.json();
 
-    // Add system prompt as first message
     const messagesWithSystem = [
       { role: "system", content: SYSTEM_PROMPT },
       ...userMessages,
@@ -43,14 +42,12 @@ export async function POST(req: NextRequest) {
 
     const assistantMessage = response.choices[0]?.message?.content || "No response";
 
-    // Save to database if enabled
     if (saveToHistory && userMessages.length > 0) {
       const lastUserMessage = userMessages[userMessages.length - 1];
       
       if (lastUserMessage.role === "user") {
         let currentChatId = chatId;
         
-        // Create new chat if no chatId provided
         if (!currentChatId) {
           const [newChat] = await db.insert(chats).values({
             userId: session.user.id,
@@ -58,13 +55,11 @@ export async function POST(req: NextRequest) {
           }).returning({ id: chats.id });
           currentChatId = newChat.id;
         } else {
-          // Update lastMessageAt
           await db.update(chats)
             .set({ lastMessageAt: new Date() })
             .where(eq(chats.id, currentChatId));
         }
 
-        // Save user message
         await db.insert(messages).values({
           chatId: currentChatId,
           content: lastUserMessage.content,
@@ -72,7 +67,6 @@ export async function POST(req: NextRequest) {
           isVoice,
         });
 
-        // Save assistant response
         await db.insert(messages).values({
           chatId: currentChatId,
           content: assistantMessage,

@@ -173,7 +173,6 @@ export default function VoiceInterface({ chatId, onChatCreated, initialMessages 
 
     setState("processing");
 
-    // Add user message to history
     const userMessage: Message = { role: "user", content: text };
     messagesRef.current.push(userMessage);
     setChatHistory(prev => [...prev, userMessage]);
@@ -196,7 +195,6 @@ export default function VoiceInterface({ chatId, onChatCreated, initialMessages 
       const data = await res.json();
       const assistantMessage: Message = { role: "assistant", content: data.message };
 
-      // Add assistant message to history
       messagesRef.current.push(assistantMessage);
       setChatHistory(prev => [...prev, assistantMessage]);
       setResponse(data.message);
