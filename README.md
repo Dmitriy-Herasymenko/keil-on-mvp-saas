@@ -1,36 +1,107 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# KeilOn Voice Assistant
 
-## Getting Started
+Голосовий асистент з підтримкою української мови, створений на базі Next.js та Groq AI.
 
-First, run the development server:
+## Архітектура
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### Frontend
+- **Next.js 16** — React фреймворк з App Router
+- **TypeScript** — типізація
+- **Tailwind CSS** — стилізація
+- **Framer Motion** — анімації
+
+### Backend
+- **Next.js API Routes** — серверні ендпоінти
+- **NextAuth v5** — аутентифікація (Credentials + JWT)
+- **Drizzle ORM** — робота з базою даних
+
+### AI та Voice
+- **Groq SDK** — AI модель `llama-3.3-70b-versatile`
+- **Web Speech API** — SpeechRecognition (STT) та SpeechSynthesis (TTS)
+- **Українська мова** — uk-UA locale
+
+### Database
+- **PostgreSQL** — реляційна база даних
+- **Neon** — хмарний PostgreSQL
+- **Drizzle ORM** — типобезпечний ORM
+
+### Schema
+```
+users (id, email, password, name, avatar)
+chats (id, userId, title, slug, isActive, lastMessageAt)
+messages (id, chatId, content, role, isVoice, audioUrl)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Основні функції
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 1. Голосовий режим
+- Мікрофон кнопка для запису
+- Автоматичне розпізнавання мови
+- Голосова відповідь асистента
+- Анімація під час запису/відтворення
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 2. Текстовий режим
+- Чат-інтерфейс з історією
+- Текстові повідомлення
+- Тільки текстові відповіді (без голосу)
 
-## Learn More
+### 3. Чат-історія
+- Збереження всіх розмов
+- Slug-based URL (`/chat/my-chat-title`)
+- Список чатів в sidebar
+- Видалення чатів
 
-To learn more about Next.js, take a look at the following resources:
+## Залежності
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```json
+{
+  "next": "16.2.1",
+  "next-auth": "^5.0.0-beta.30",
+  "drizzle-orm": "^0.45.1",
+  "groq-sdk": "^1.1.1",
+  "framer-motion": "^12.38.0",
+  "lucide-react": "^1.6.0",
+  "bcryptjs": "^3.0.3",
+  "pg": "^8.20.0"
+}
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Запуск
 
-## Deploy on Vercel
+```bash
+# Встановлення
+npm install
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# Розробка
+npm run dev
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Білд
+npm run build
+
+# Деплой
+npm run deploy
+```
+
+## Змінні середовища
+
+```env
+GROQ_API_KEY=gsk_...
+DB_URL=postgresql://...
+AUTH_SECRET=...
+AUTH_URL=https://...
+```
+
+## Особливості реалізації
+
+### Slug-based routing
+Замість UUID в URL використовуються читабельні slug:
+- Було: `/chat/550e8400-e29b-41d4-a716-446655440000`
+- Стало: `/chat/pryvit-yak-spravy-xyz9`
+
+### iOS обмеження
+На iPhone/iPad SpeechSynthesis вимагає користувацької взаємодії. Додано кнопку "Прослухати" для текстового режиму.
+
+### Оптимізації
+- `React.memo` для повідомлень
+- `useCallback` для функцій
+- Окремі UUID та slug для API/URL

@@ -78,6 +78,9 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
   const isInitialized = useRef(false);
+  const isProcessingRef = useRef(false);
+  const handleSendMessageRef = useRef<((text: string) => void) | null>(null);
+  const hasProcessedFinalRef = useRef(false);
 
   useEffect(() => {
     setCurrentChatId(chatUuid || chatId);
@@ -128,7 +131,11 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
     recognitionRef.current.interimResults = true;
     recognitionRef.current.lang = "uk-UA";
 
+    hasProcessedFinalRef.current = false;
+    
     recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
+      if (hasProcessedFinalRef.current) return;
+
       let finalTranscript = "";
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -139,9 +146,10 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
       }
 
       if (finalTranscript) {
+        hasProcessedFinalRef.current = true;
+        console.log("Processing transcript:", finalTranscript);
         setTranscript(finalTranscript);
-        handleSendMessage(finalTranscript);
-        recognitionRef.current?.stop();
+        handleSendMessageRef.current?.(finalTranscript);
       }
     };
 
@@ -231,6 +239,12 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
   }, []);
 
   const handleSendMessage = useCallback(async (text: string) => {
+    console.log("handleSendMessage called with:", text, "state:", state);
+    if (handleSendMessageRef.current === handleSendMessage) {
+      console.log("Same function instance");
+    } else {
+      console.log("Different function instance - stale closure!");
+    }
     if (!text.trim()) return;
 
     setState("processing");
@@ -291,7 +305,11 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
       setError("Failed to get response from assistant");
       setState("error");
     }
-  }, [currentChatId, state, onChatCreated, speakResponse, stopListening]);
+  }, [currentChatId, state, onChatCreated, speakResponse, stopListening, isTextMode]);
+
+  useEffect(() => {
+    handleSendMessageRef.current = handleSendMessage;
+  }, [handleSendMessage]);
 
   const handleTextSubmit = (e: React.FormEvent) => {
     e.preventDefault();
