@@ -124,12 +124,10 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
     }
 
     recognitionRef.current = new SpeechRecognition();
-    recognitionRef.current.continuous = true;
+    recognitionRef.current.continuous = false;
     recognitionRef.current.interimResults = true;
     recognitionRef.current.lang = "uk-UA";
 
-    let lastProcessedTranscript = "";
-    
     recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
       let finalTranscript = "";
 
@@ -140,10 +138,10 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
         }
       }
 
-      if (finalTranscript && finalTranscript !== lastProcessedTranscript) {
-        lastProcessedTranscript = finalTranscript;
+      if (finalTranscript) {
         setTranscript(finalTranscript);
         handleSendMessage(finalTranscript);
+        recognitionRef.current?.stop();
       }
     };
 
