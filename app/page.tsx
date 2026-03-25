@@ -7,7 +7,6 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect to new chat on load
     const createAndRedirect = async () => {
       try {
         const res = await fetch("/api/chat/create", { method: "POST" });

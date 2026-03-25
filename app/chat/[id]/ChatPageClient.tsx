@@ -6,6 +6,7 @@ import VoiceInterface from "../../components/VoiceInterface";
 import ChatSidebar from "../../components/ChatSidebar";
 import LogoutButton from "../../components/LogoutButton";
 import { useSession } from "next-auth/react";
+import { Menu, X } from "lucide-react";
 
 interface Chat {
   id: string;
@@ -23,8 +24,8 @@ export default function ChatPageClient({ initialChat, initialMessages }: ChatPag
   const { data: session } = useSession();
   const chatId = params.id as string;
   const [chat, setChat] = useState<Chat | null>(initialChat);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Update chat when URL changes
   useEffect(() => {
     if (chatId !== chat?.id) {
       fetchChat();
@@ -47,6 +48,7 @@ export default function ChatPageClient({ initialChat, initialMessages }: ChatPag
 
   const handleSelectChat = (id: string) => {
     router.push(`/chat/${id}`, { scroll: false });
+    setSidebarOpen(false);
   };
 
   const handleNewChat = async () => {
@@ -55,6 +57,7 @@ export default function ChatPageClient({ initialChat, initialMessages }: ChatPag
       if (res.ok) {
         const data = await res.json();
         router.push(`/chat/${data.chatId}`, { scroll: false });
+        setSidebarOpen(false);
       }
     } catch (error) {
       console.error("Failed to create chat:", error);
@@ -62,32 +65,59 @@ export default function ChatPageClient({ initialChat, initialMessages }: ChatPag
   };
 
   return (
-    <div className="flex h-screen bg-zinc-50 font-sans dark:bg-black">
-      <ChatSidebar 
-        onSelectChat={handleSelectChat} 
-        onNewChat={handleNewChat}
-        currentChatId={chatId}
-      />
+    <div className="flex h-screen bg-zinc-50 font-sans dark:bg-black overflow-hidden">
+      {/* */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
-      <div className="flex-1 flex flex-col">
-        <header className="flex items-center justify-between px-6 py-4 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-              {chat?.title || initialChat?.title || "Новий чат"}
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              KeilOn Voice Assistant
-            </p>
+      {/* */}
+      <div className={`
+        fixed lg:static inset-y-0 left-0 z-50
+        transform transition-transform duration-300 ease-in-out
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
+        <ChatSidebar 
+          onSelectChat={handleSelectChat} 
+          onNewChat={handleNewChat}
+          currentChatId={chatId}
+        />
+      </div>
+
+      {/* */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Header */}
+        <header className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+          <div className="flex items-center gap-3">
+            {/* */}
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden p-2 -ml-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white truncate">
+                {chat?.title || initialChat?.title || "Новий чат"}
+              </h1>
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 hidden sm:block">
+                KeilOn Voice Assistant
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600 dark:text-gray-400">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate max-w-[100px] sm:max-w-[200px]">
               {session?.user?.email}
             </span>
             <LogoutButton />
           </div>
         </header>
 
-        <main className="flex-1 flex flex-col items-center justify-center p-4 overflow-auto">
+        {/* */}
+        <main className="flex-1 flex flex-col items-center justify-center p-2 sm:p-4 overflow-auto">
           <VoiceInterface chatId={chatId} initialMessages={initialMessages} />
         </main>
       </div>

@@ -36,17 +36,15 @@ export default function ChatSidebar({ onSelectChat, onNewChat, currentChatId }: 
     }
   };
 
-  const deleteChat = async (e: React.MouseEvent, chatId: string) => {
+  const deleteChat = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (!confirm("Видалити цей чат?")) return;
 
     try {
-      const res = await fetch(`/api/chat/history?chatId=${chatId}`, { method: "DELETE" });
+      const res = await fetch(`/api/chat/${id}`, { method: "DELETE" });
       if (res.ok) {
-        setChats(prev => prev.filter(c => c.id !== chatId));
-        if (currentChatId === chatId) {
-          onNewChat();
-        }
+        setChats(prev => prev.filter(c => c.id !== id));
+        
       }
     } catch (error) {
       console.error("Failed to delete chat:", error);
@@ -71,7 +69,6 @@ export default function ChatSidebar({ onSelectChat, onNewChat, currentChatId }: 
     fetchChats();
   }, []);
 
-  // Refresh chats when current chat changes
   useEffect(() => {
     if (currentChatId) {
       fetchChats();
@@ -94,8 +91,8 @@ export default function ChatSidebar({ onSelectChat, onNewChat, currentChatId }: 
   };
 
   return (
-    <div className="w-72 bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-full">
-      {/* New Chat Button */}
+    <div className="w-72 sm:w-80 bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-full">
+      {/* */}
       <div className="p-3">
         <button
           onClick={onNewChat}
@@ -106,7 +103,7 @@ export default function ChatSidebar({ onSelectChat, onNewChat, currentChatId }: 
         </button>
       </div>
 
-      {/* Chat List */}
+      {/* */}
       <div className="flex-1 overflow-y-auto px-3 pb-3">
         {loading ? (
           <div className="space-y-2">
@@ -160,7 +157,7 @@ export default function ChatSidebar({ onSelectChat, onNewChat, currentChatId }: 
                   </div>
                 </div>
                 
-                {/* Delete button on hover */}
+                {/* */}
                 <button
                   onClick={(e) => deleteChat(e, chat.id)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
@@ -173,7 +170,7 @@ export default function ChatSidebar({ onSelectChat, onNewChat, currentChatId }: 
         )}
       </div>
 
-      {/* Footer */}
+      {/* */}
       <div className="p-3 border-t border-gray-200 dark:border-gray-800">
         <button
           onClick={clearAllHistory}

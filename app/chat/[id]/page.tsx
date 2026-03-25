@@ -18,7 +18,6 @@ export default async function ChatPage({ params }: PageProps) {
 
   const { id } = await params;
 
-  // Fetch chat on server
   const chat = await db.query.chats.findFirst({
     where: and(
       eq(chats.id, id),
@@ -30,7 +29,6 @@ export default async function ChatPage({ params }: PageProps) {
     redirect("/");
   }
 
-  // Fetch messages on server
   const chatMessages = await db.query.messages.findMany({
     where: eq(messages.chatId, id),
     orderBy: desc(messages.createdAt),

@@ -4,7 +4,6 @@ import { db } from "@/db";
 import { chats, messages } from "@/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 
-// GET /api/chat/[id] - Get chat details and messages
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -21,7 +20,6 @@ export async function GET(
 
     const { id } = await params;
 
-    // Get chat
     const chat = await db.query.chats.findFirst({
       where: and(
         eq(chats.id, id),
@@ -36,7 +34,6 @@ export async function GET(
       );
     }
 
-    // Get messages
     const chatMessages = await db.query.messages.findMany({
       where: eq(messages.chatId, id),
       orderBy: desc(messages.createdAt),
@@ -56,7 +53,6 @@ export async function GET(
   }
 }
 
-// DELETE /api/chat/[id] - Delete specific chat
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
