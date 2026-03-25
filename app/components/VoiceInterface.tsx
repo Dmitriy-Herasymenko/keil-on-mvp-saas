@@ -81,20 +81,30 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
   const isProcessingRef = useRef(false);
   const handleSendMessageRef = useRef<((text: string) => void) | null>(null);
   const hasProcessedFinalRef = useRef(false);
+  const isProcessingMessageRef = useRef(false);
 
   useEffect(() => {
     setCurrentChatId(chatUuid || chatId);
     setCurrentSlug(chatId);
-    const idToFetch = chatUuid || chatId;
-    if (idToFetch) {
-      fetchChatMessages(idToFetch);
-    } else {
+    
+    if (initialMessages.length > 0) {
       setChatHistory(initialMessages);
-      messagesRef.current = initialMessages;
+      messagesRef.current = [...initialMessages];
+      console.log("[INIT] Loaded initial messages:", initialMessages.length);
+    } else {
+      const idToFetch = chatUuid || chatId;
+      if (idToFetch) {
+        fetchChatMessages(idToFetch);
+      }
     }
   }, [chatId, chatUuid, initialMessages]);
 
   const fetchChatMessages = async (id: string) => {
+    if (chatHistory.length > 0) {
+      console.log("[SKIP] Already have messages, skipping fetch");
+      return;
+    }
+    
     try {
       const res = await fetch(`/api/chat/history?chatId=${id}`);
       if (res.ok) {
@@ -103,6 +113,7 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
           role: m.role,
           content: m.content,
         }));
+        console.log("[FETCH] Loaded messages:", messages.length);
         setChatHistory(messages);
         messagesRef.current = messages;
       }
@@ -133,6 +144,8 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
 
     hasProcessedFinalRef.current = false;
     
+    let lastProcessedText = "";
+    
     recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
       if (hasProcessedFinalRef.current) return;
 
@@ -145,9 +158,13 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
         }
       }
 
-      if (finalTranscript) {
+      if (finalTranscript && finalTranscript !== lastProcessedText) {
+        lastProcessedText = finalTranscript;
         hasProcessedFinalRef.current = true;
         console.log("Processing transcript:", finalTranscript);
+        
+        recognitionRef.current?.stop();
+        
         setTranscript(finalTranscript);
         handleSendMessageRef.current?.(finalTranscript);
       }
@@ -239,25 +256,34 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
   }, []);
 
   const handleSendMessage = useCallback(async (text: string) => {
-    console.log("handleSendMessage called with:", text, "state:", state);
-    if (handleSendMessageRef.current === handleSendMessage) {
-      console.log("Same function instance");
-    } else {
-      console.log("Different function instance - stale closure!");
+    if (isProcessingMessageRef.current) {
+      console.log("[BLOCKED] Message already being processed");
+      return;
     }
-    if (!text.trim()) return;
+    
+    isProcessingMessageRef.current = true;
+    console.log("handleSendMessage called with:", text, "state:", state, "currentChatId:", currentChatId);
+    
+    if (!text.trim()) {
+      isProcessingMessageRef.current = false;
+      return;
+    }
 
     setState("processing");
 
     const userMessage: Message = { role: "user", content: text };
     
-    const alreadyExists = messagesRef.current.some(
-      m => m.role === "user" && m.content === text
-    );
+    const lastMessage = messagesRef.current[messagesRef.current.length - 1];
+    const isDuplicate = lastMessage && 
+      lastMessage.role === "user" && 
+      lastMessage.content === text;
     
-    if (!alreadyExists) {
+    if (!isDuplicate) {
       messagesRef.current.push(userMessage);
       setChatHistory(prev => [...prev, userMessage]);
+      console.log("[UI] Added user message:", text, "Total messages:", messagesRef.current.length);
+    } else {
+      console.log("[UI] Duplicate message blocked:", text);
     }
 
     try {
@@ -304,6 +330,9 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
       console.error("Error sending message:", err);
       setError("Failed to get response from assistant");
       setState("error");
+    } finally {
+      isProcessingMessageRef.current = false;
+      console.log("[UNLOCK] Message processing completed");
     }
   }, [currentChatId, state, onChatCreated, speakResponse, stopListening, isTextMode]);
 
@@ -340,6 +369,8 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
 
     if (state === "listening") return;
 
+    hasProcessedFinalRef.current = false;
+    
     try {
       recognitionRef.current.stop();
     } catch {}
