@@ -1,9 +1,11 @@
-import { auth } from "@/auth";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { auth } from "@/auth";
 
-export default auth((req) => {
-  const { nextUrl } = req;
-  const isLoggedIn = !!req.auth;
+export async function proxy(request: NextRequest) {
+  const session = await auth();
+  const { nextUrl } = request;
+  const isLoggedIn = !!session?.user;
 
   const publicRoutes = ["/login", "/register", "/api/auth"];
   const isPublicRoute = publicRoutes.some((route) =>
@@ -19,7 +21,7 @@ export default auth((req) => {
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico|public/).*)"],
