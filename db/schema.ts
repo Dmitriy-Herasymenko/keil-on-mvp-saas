@@ -17,6 +17,7 @@ export const chats = pgTable("chats", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   title: varchar("title", { length: 255 }).notNull().default("Новий чат"),
+  slug: varchar("slug", { length: 100 }).unique(),
   isActive: boolean("is_active").default(true),
   lastMessageAt: timestamp("last_message_at").defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),

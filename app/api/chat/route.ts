@@ -15,6 +15,16 @@ const SYSTEM_PROMPT = `Ти - корисний голосовий асистен
 3. Будь дружелюбним та ввічливим
 4. Якщо не розумієш питання - попроси повторити`;
 
+function generateSlug(title: string): string {
+  const timestamp = Date.now().toString(36).slice(-4);
+  const normalized = title
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .slice(0, 40);
+  return normalized ? `${normalized}-${timestamp}` : `chat-${timestamp}`;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
@@ -49,10 +59,12 @@ export async function POST(req: NextRequest) {
         let currentChatId = chatId;
         
         if (!currentChatId) {
+          const title = lastUserMessage.content.slice(0, 50) + (lastUserMessage.content.length > 50 ? "..." : "");
           const [newChat] = await db.insert(chats).values({
             userId: session.user.id,
-            title: lastUserMessage.content.slice(0, 50) + (lastUserMessage.content.length > 50 ? "..." : ""),
-          }).returning({ id: chats.id });
+            title,
+            slug: generateSlug(title),
+          }).returning({ id: chats.id, slug: chats.slug });
           currentChatId = newChat.id;
         } else {
           await db.update(chats)

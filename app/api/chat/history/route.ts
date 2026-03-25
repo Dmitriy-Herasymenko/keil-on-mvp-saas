@@ -19,8 +19,27 @@ export async function GET(req: NextRequest) {
     const chatId = searchParams.get("chatId");
 
     if (chatId) {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(chatId);
+      
+      let actualChatId = chatId;
+      if (!isUuid) {
+        const chat = await db.query.chats.findFirst({
+          where: and(
+            eq(chats.slug, chatId),
+            eq(chats.userId, session.user.id)
+          ),
+        });
+        if (!chat) {
+          return NextResponse.json(
+            { error: "Чат не знайдено" },
+            { status: 404 }
+          );
+        }
+        actualChatId = chat.id;
+      }
+      
       const chatMessages = await db.query.messages.findMany({
-        where: eq(messages.chatId, chatId),
+        where: eq(messages.chatId, actualChatId),
         orderBy: desc(messages.createdAt),
         limit: 100,
       });

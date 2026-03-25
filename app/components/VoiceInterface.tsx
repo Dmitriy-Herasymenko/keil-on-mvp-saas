@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useEffect, useRef, useCallback, useState, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useVoiceStore, VoiceState } from "../store/voiceStore";
-import { Mic, Loader2, Volume2, AlertCircle, Square, Send, Type, VolumeX } from "lucide-react";
+import { Mic, Loader2, Volume2, AlertCircle, Square, Send, Type, Sparkles } from "lucide-react";
 
 interface Message {
   role: "user" | "assistant";
@@ -12,11 +12,33 @@ interface Message {
 
 interface VoiceInterfaceProps {
   chatId?: string;
-  onChatCreated?: (chatId: string) => void;
+  chatUuid?: string;
+  onChatCreated?: (chatId: string, slug?: string) => void;
   initialMessages?: Message[];
 }
 
-export default function VoiceInterface({ chatId, onChatCreated, initialMessages = [] }: VoiceInterfaceProps) {
+const MemoizedMessage = memo(({ msg, index }: { msg: Message; index: number }) => (
+  <div className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+    {msg.role === "assistant" && (
+      <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0">
+        <Sparkles className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-white" />
+      </div>
+    )}
+    <div
+      className={`max-w-[90%] sm:max-w-[85%] lg:max-w-[80%] px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl text-sm sm:text-base leading-relaxed ${
+        msg.role === "user"
+          ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-br-md"
+          : "bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 rounded-bl-md"
+      }`}
+    >
+      {msg.content}
+    </div>
+  </div>
+));
+
+MemoizedMessage.displayName = "MemoizedMessage";
+
+export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initialMessages = [] }: VoiceInterfaceProps) {
   const {
     state,
     transcript,
@@ -28,27 +50,30 @@ export default function VoiceInterface({ chatId, onChatCreated, initialMessages 
     setResponse,
     setError,
     setIsSupported,
-    reset,
   } = useVoiceStore();
 
   const [textInput, setTextInput] = useState("");
   const [chatHistory, setChatHistory] = useState<Message[]>(initialMessages);
-  const [currentChatId, setCurrentChatId] = useState<string | undefined>(chatId);
+  const [currentChatId, setCurrentChatId] = useState<string | undefined>(chatUuid || chatId);
+  const [currentSlug, setCurrentSlug] = useState<string | undefined>(chatId);
   const [isTextMode, setIsTextMode] = useState(false);
   const messagesRef = useRef<Message[]>(initialMessages);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
+  const isInitialized = useRef(false);
 
   useEffect(() => {
-    setCurrentChatId(chatId);
-    if (chatId) {
-      fetchChatMessages(chatId);
+    setCurrentChatId(chatUuid || chatId);
+    setCurrentSlug(chatId);
+    const idToFetch = chatUuid || chatId;
+    if (idToFetch) {
+      fetchChatMessages(idToFetch);
     } else {
       setChatHistory(initialMessages);
       messagesRef.current = initialMessages;
     }
-  }, [chatId, initialMessages]);
+  }, [chatId, chatUuid, initialMessages]);
 
   const fetchChatMessages = async (id: string) => {
     try {
@@ -72,7 +97,8 @@ export default function VoiceInterface({ chatId, onChatCreated, initialMessages 
   }, [chatHistory]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || isInitialized.current) return;
+    isInitialized.current = true;
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -88,14 +114,11 @@ export default function VoiceInterface({ chatId, onChatCreated, initialMessages 
 
     recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
       let finalTranscript = "";
-      let interimTranscript = "";
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
           finalTranscript += transcript;
-        } else {
-          interimTranscript += transcript;
         }
       }
 
@@ -168,6 +191,18 @@ export default function VoiceInterface({ chatId, onChatCreated, initialMessages 
     synthRef.current.speak(utterance);
   }, []);
 
+  const stopListening = useCallback(() => {
+    if (!recognitionRef.current) return;
+
+    try {
+      recognitionRef.current.stop();
+      synthRef.current?.cancel();
+      setState("idle");
+    } catch (err) {
+      console.error("Error stopping recognition:", err);
+    }
+  }, []);
+
   const handleSendMessage = useCallback(async (text: string) => {
     if (!text.trim()) return;
 
@@ -189,7 +224,9 @@ export default function VoiceInterface({ chatId, onChatCreated, initialMessages 
       });
 
       if (!res.ok) {
-        throw new Error("Failed to get response");
+        const errorData = await res.json().catch(() => ({}));
+        console.error("API error:", res.status, errorData);
+        throw new Error(errorData.error || "Failed to get response");
       }
 
       const data = await res.json();
@@ -201,10 +238,12 @@ export default function VoiceInterface({ chatId, onChatCreated, initialMessages 
 
         if (data.chatId && !currentChatId) {
         setCurrentChatId(data.chatId);
-        onChatCreated?.(data.chatId);
+        setCurrentSlug(data.slug);
+        onChatCreated?.(data.chatId, data.slug);
       }
 
       if (!isTextMode) {
+        stopListening();
         speakResponse(data.message);
       } else {
         setState("idle");
@@ -218,7 +257,7 @@ export default function VoiceInterface({ chatId, onChatCreated, initialMessages 
       setError("Failed to get response from assistant");
       setState("error");
     }
-  }, [currentChatId, state, onChatCreated, speakResponse]);
+  }, [currentChatId, state, onChatCreated, speakResponse, stopListening]);
 
   const handleTextSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -264,18 +303,6 @@ export default function VoiceInterface({ chatId, onChatCreated, initialMessages 
       }
     }, 50);
   }, [state]);
-
-  const stopListening = useCallback(() => {
-    if (!recognitionRef.current) return;
-
-    try {
-      recognitionRef.current.stop();
-      synthRef.current?.cancel();
-      setState("idle");
-    } catch (err) {
-      console.error("Error stopping recognition:", err);
-    }
-  }, []);
 
   const interruptSpeaking = useCallback(() => {
     if (synthRef.current) {
@@ -331,146 +358,135 @@ export default function VoiceInterface({ chatId, onChatCreated, initialMessages 
   }
 
   return (
-    <div className="flex flex-col items-center justify-center w-full max-w-4xl mx-auto p-2 sm:p-4 lg:p-6">
-      {/* */}
-      <div className="flex items-center gap-2 mb-4">
+    <div className="flex flex-col items-center justify-start w-full max-w-3xl xl:max-w-4xl mx-auto px-3 sm:px-4 lg:px-6">
+      <div className="flex items-center gap-1 p-1 bg-zinc-100 dark:bg-zinc-900 rounded-xl mb-3 sm:mb-6">
         <button
           onClick={() => setIsTextMode(false)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm font-medium min-w-[80px] justify-center ${
             !isTextMode 
-              ? "bg-blue-500 text-white" 
-              : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+              ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm" 
+              : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
           }`}
         >
           <Volume2 className="w-4 h-4" />
-          Голос
+          <span>Голос</span>
         </button>
         <button
           onClick={() => setIsTextMode(true)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm font-medium min-w-[80px] justify-center ${
             isTextMode 
-              ? "bg-blue-500 text-white" 
-              : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+              ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm" 
+              : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
           }`}
         >
           <Type className="w-4 h-4" />
-          Текст
+          <span>Текст</span>
         </button>
       </div>
 
-      {/* */}
-      <div className="w-full h-48 sm:h-56 lg:h-64 mb-4 sm:mb-6 bg-white dark:bg-gray-900 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-800">
-        <div className="h-full overflow-y-auto p-4 space-y-3">
-          {chatHistory.length === 0 && (
-            <p className="text-center text-gray-400 dark:text-gray-600 text-sm py-8">
-              Почніть розмову голосом або текстом
-            </p>
-          )}
-          {chatHistory.map((msg, index) => (
-            <div
-              key={index}
-              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-            >
-              <div
-                className={`max-w-[80%] px-4 py-2 rounded-2xl ${
-                  msg.role === "user"
-                    ? "bg-blue-500 text-white rounded-br-md"
-                    : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-bl-md"
-                }`}
-              >
-                <p className="text-sm">{msg.content}</p>
+      <div className="w-full h-[50vh] sm:h-[55vh] lg:h-[60vh] min-h-[300px] max-h-[600px] mb-4 sm:mb-6 bg-white dark:bg-zinc-950 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+        <div className="h-full overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
+          {chatHistory.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-center">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center mb-3 sm:mb-4">
+                <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-zinc-400" />
               </div>
+              <p className="text-zinc-500 dark:text-zinc-400 text-sm">
+                Почніть розмову голосом або текстом
+              </p>
             </div>
-          ))}
-          <div ref={chatEndRef} />
+          ) : (
+            <>
+              {chatHistory.map((msg, index) => (
+                <MemoizedMessage key={`${msg.role}-${index}`} msg={msg} index={index} />
+              ))}
+              <div ref={chatEndRef} />
+            </>
+          )}
         </div>
       </div>
 
-      {/* */}
-      <div className="mb-6 text-center">
+      <div className="mb-4 sm:mb-6 text-center px-4">
         <AnimatePresence mode="wait">
           <motion.div
             key={state}
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            className="text-lg font-medium text-gray-700 dark:text-gray-300"
+            className="text-xs sm:text-sm font-medium text-zinc-500 dark:text-zinc-400"
           >
             {getStateText(state)}
           </motion.div>
         </AnimatePresence>
       </div>
 
-      {/* */}
-      <div className="relative mb-4 sm:mb-8">
+      <div className="relative mb-4 sm:mb-6">
         <motion.button
           onClick={() => {
-            console.log("Button clicked, current state:", state);
             if (state === "idle") {
-              console.log("Starting listening...");
               startListening();
             } else if (state === "listening") {
-              console.log("Stopping listening...");
               stopListening();
             } else if (state === "speaking") {
-              console.log("Interrupting speaking...");
               interruptSpeaking();
-            } else {
-              console.log("Button clicked but state is:", state, "- no action taken");
             }
           }}
           disabled={state === "processing"}
-          className={`relative w-24 h-24 sm:w-32 sm:h-32 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl ${
+          className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg ${
             state === "idle"
-              ? "bg-gradient-to-br from-gray-100 to-gray-300 hover:from-gray-200 hover:to-gray-400 dark:from-gray-700 dark:to-gray-900 dark:hover:from-gray-600 dark:hover:to-gray-800"
-              : getStateColor(state)
-          } ${state === "processing" ? "cursor-not-allowed opacity-70" : "cursor-pointer"} ${state === "speaking" ? "pointer-events-auto" : ""}`}
+              ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:scale-105"
+              : state === "listening"
+              ? "bg-red-500 text-white"
+              : state === "speaking"
+              ? "bg-indigo-500 text-white"
+              : state === "processing"
+              ? "bg-amber-500 text-white cursor-not-allowed"
+              : "bg-red-500 text-white"
+          }`}
           animate={
             state === "listening"
-              ? { scale: [1, 1.05, 1] }
+              ? { scale: [1, 1.08, 1] }
               : state === "processing"
-              ? { scale: [1, 0.95, 1] }
+              ? { rotate: 360 }
               : { scale: 1 }
           }
           transition={
             state === "listening"
-              ? { repeat: Infinity, duration: 0.8, ease: "easeInOut" }
+              ? { repeat: Infinity, duration: 1.2, ease: "easeInOut" }
               : state === "processing"
-              ? { repeat: Infinity, duration: 0.6, ease: "easeInOut" }
-              : { duration: 0.3 }
+              ? { repeat: Infinity, duration: 1, ease: "linear" }
+              : { duration: 0.2 }
           }
           whileHover={state === "idle" || state === "speaking" ? { scale: 1.05 } : {}}
           whileTap={state === "idle" || state === "speaking" ? { scale: 0.95 } : {}}
         >
-          {state === "idle" && <Mic className="w-8 h-8 sm:w-12 sm:h-12 text-gray-600 dark:text-gray-400" />}
-          {state === "listening" && <Mic className="w-8 h-8 sm:w-12 sm:h-12 text-white" />}
-          {state === "processing" && <Loader2 className="w-8 h-8 sm:w-12 sm:h-12 text-white" />}
-          {state === "speaking" && <Square className="w-8 h-8 sm:w-12 sm:h-12 text-white fill-white" />}
-          {state === "error" && <AlertCircle className="w-8 h-8 sm:w-12 sm:h-12 text-white" />}
+          {state === "idle" && <Mic className="w-5 h-5 sm:w-6 sm:h-6" />}
+          {state === "listening" && <Mic className="w-5 h-5 sm:w-6 sm:h-6" />}
+          {state === "processing" && <Loader2 className="w-5 h-5 sm:w-6 sm:h-6" />}
+          {state === "speaking" && <Square className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />}
+          {state === "error" && <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6" />}
         </motion.button>
 
-        {/* */}
         {state === "listening" && (
           <>
             <motion.div
-              className="absolute inset-0 rounded-full border-4 border-green-400 pointer-events-none"
-              animate={{ scale: [1, 2], opacity: [0.6, 0] }}
+              className="absolute inset-0 rounded-full border-2 border-red-400 pointer-events-none"
+              animate={{ scale: [1, 1.8], opacity: [0.5, 0] }}
               transition={{ repeat: Infinity, duration: 1.5, ease: "easeOut" }}
             />
             <motion.div
-              className="absolute inset-0 rounded-full border-4 border-green-400 pointer-events-none"
-              animate={{ scale: [1, 2], opacity: [0.6, 0] }}
+              className="absolute inset-0 rounded-full border-2 border-red-400 pointer-events-none"
+              animate={{ scale: [1, 1.8], opacity: [0.5, 0] }}
               transition={{ repeat: Infinity, duration: 1.5, ease: "easeOut", delay: 0.5 }}
             />
           </>
         )}
 
-        {/* */}
         {state === "speaking" && (
           <motion.div
-            className="absolute inset-0 rounded-full bg-blue-400 pointer-events-none"
-            animate={{ scale: [1, 1.3], opacity: [0.3, 0] }}
-            transition={{ repeat: Infinity, duration: 1, ease: "easeOut" }}
+            className="absolute inset-0 rounded-full bg-indigo-400 pointer-events-none"
+            animate={{ scale: [1, 1.4], opacity: [0.2, 0] }}
+            transition={{ repeat: Infinity, duration: 1.2, ease: "easeOut" }}
           />
         )}
       </div>
@@ -505,45 +521,47 @@ export default function VoiceInterface({ chatId, onChatCreated, initialMessages 
         )}
       </AnimatePresence>
 
-      {/* */}
       <AnimatePresence>
         {error && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg w-full flex items-center gap-2"
+            className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-xl w-full flex items-center gap-2 border border-red-100 dark:border-red-900/30"
           >
-            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+            <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
             <p className="text-red-700 dark:text-red-400 text-sm">{error}</p>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* */}
-      <form onSubmit={handleTextSubmit} className="w-full mt-4 sm:mt-6 flex gap-2">
-        <input
-          type="text"
-          value={textInput}
-          onChange={(e) => setTextInput(e.target.value)}
-          placeholder="Введіть повідомлення..."
-          className="flex-1 px-3 sm:px-4 py-2 sm:py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:text-white outline-none transition-all text-sm sm:text-base"
-          disabled={state === "processing"}
-        />
+      <form onSubmit={handleTextSubmit} className="w-full max-w-2xl mx-auto mt-4 sm:mt-6 flex gap-2 sm:gap-3">
+        <div className="flex-1 relative">
+          <input
+            type="text"
+            value={textInput}
+            onChange={(e) => setTextInput(e.target.value)}
+            placeholder="Введіть повідомлення..."
+            className="w-full px-4 sm:px-5 py-3 sm:py-3.5 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 focus:border-transparent dark:text-white outline-none transition-all text-sm sm:text-base"
+            disabled={state === "processing"}
+          />
+        </div>
         <button
           type="submit"
           disabled={!textInput.trim() || state === "processing"}
-          className="px-4 sm:px-6 py-2 sm:py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-xl transition-colors flex items-center gap-2"
+          className="px-4 sm:px-5 py-3 sm:py-3.5 bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 disabled:bg-zinc-300 dark:disabled:bg-zinc-800 disabled:cursor-not-allowed text-white dark:text-zinc-900 rounded-xl transition-all flex items-center justify-center"
         >
           <Send className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
       </form>
 
-      {/* */}
-      <div className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
-        {state === "idle" && <p>Натисніть мікрофон щоб почати розмову</p>}
-        {state === "listening" && <p>Натисніть щоб зупинити запис</p>}
-        {state === "speaking" && <p className="text-blue-500 font-medium">Натисніть щоб перервати відповідь</p>}
+      <div className="mt-4 sm:mt-6 text-center">
+        <p className="text-xs text-zinc-400 dark:text-zinc-500">
+          {state === "idle" && "Натисніть мікрофон щоб почати"}
+          {state === "listening" && "Натисніть щоб зупинити"}
+          {state === "speaking" && "Натисніть щоб перервати"}
+          {state === "processing" && "Обробка..."}
+        </p>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { chats, messages } from "@/db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, or } from "drizzle-orm";
 
 export async function GET(
   req: NextRequest,
@@ -19,10 +19,12 @@ export async function GET(
     }
 
     const { id } = await params;
+    
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
     const chat = await db.query.chats.findFirst({
       where: and(
-        eq(chats.id, id),
+        isUuid ? eq(chats.id, id) : eq(chats.slug, id),
         eq(chats.userId, session.user.id)
       ),
     });
@@ -35,7 +37,7 @@ export async function GET(
     }
 
     const chatMessages = await db.query.messages.findMany({
-      where: eq(messages.chatId, id),
+      where: eq(messages.chatId, chat.id),
       orderBy: desc(messages.createdAt),
       limit: 100,
     });

@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { chats, messages } from "@/db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, or } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import ChatPageClient from "./ChatPageClient";
 
@@ -17,10 +17,12 @@ export default async function ChatPage({ params }: PageProps) {
   }
 
   const { id } = await params;
+  
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
   const chat = await db.query.chats.findFirst({
     where: and(
-      eq(chats.id, id),
+      isUuid ? eq(chats.id, id) : eq(chats.slug, id),
       eq(chats.userId, session.user.id)
     ),
   });
@@ -30,7 +32,7 @@ export default async function ChatPage({ params }: PageProps) {
   }
 
   const chatMessages = await db.query.messages.findMany({
-    where: eq(messages.chatId, id),
+    where: eq(messages.chatId, chat.id),
     orderBy: desc(messages.createdAt),
     limit: 100,
   });
@@ -40,9 +42,15 @@ export default async function ChatPage({ params }: PageProps) {
     content: m.content,
   }));
 
+  const initialChat = {
+    id: chat.id,
+    title: chat.title,
+    slug: chat.slug || undefined,
+  };
+
   return (
     <ChatPageClient 
-      initialChat={chat} 
+      initialChat={initialChat} 
       initialMessages={initialMessages}
     />
   );
