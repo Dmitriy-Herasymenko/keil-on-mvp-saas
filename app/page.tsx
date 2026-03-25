@@ -1,41 +1,30 @@
-import VoiceInterface from "./components/VoiceInterface";
-import ChatHistory from "./components/ChatHistory";
-import LogoutButton from "./components/LogoutButton";
-import { auth } from "@/auth";
+"use client";
 
-export default async function Home() {
-  const session = await auth();
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+
+export default function Home() {
+  const router = useRouter();
+
+  useEffect(() => {
+    // Redirect to new chat on load
+    const createAndRedirect = async () => {
+      try {
+        const res = await fetch("/api/chat/create", { method: "POST" });
+        if (res.ok) {
+          const data = await res.json();
+          router.push(`/chat/${data.chatId}`);
+        }
+      } catch (error) {
+        console.error("Failed to create chat:", error);
+      }
+    };
+    createAndRedirect();
+  }, [router]);
 
   return (
-    <div className="flex h-screen bg-zinc-50 font-sans dark:bg-black">
-      {/* Sidebar with chat history */}
-      <ChatHistory />
-
-      {/* Main content */}
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <header className="flex items-center justify-between px-6 py-4 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-              KeilOn Voice Assistant
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Powered by Groq AI
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600 dark:text-gray-400">
-              {session?.user?.email}
-            </span>
-            <LogoutButton />
-          </div>
-        </header>
-
-        {/* Main voice interface */}
-        <main className="flex-1 flex flex-col items-center justify-center p-4 overflow-auto">
-          <VoiceInterface />
-        </main>
-      </div>
+    <div className="flex h-screen items-center justify-center">
+      <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full" />
     </div>
   );
 }

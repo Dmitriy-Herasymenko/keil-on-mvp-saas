@@ -1,18 +1,22 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useVoiceStore, VoiceState } from "../store/voiceStore";
-import { Mic, Loader2, Volume2, AlertCircle, Square } from "lucide-react";
+import { Mic, Loader2, Volume2, AlertCircle, Square, Send, Type, VolumeX } from "lucide-react";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
 }
 
+interface VoiceInterfaceProps {
+  chatId?: string;
+  onChatCreated?: (chatId: string) => void;
+  initialMessages?: Message[];
+}
 
-
-export default function VoiceInterface() {
+export default function VoiceInterface({ chatId, onChatCreated, initialMessages = [] }: VoiceInterfaceProps) {
   const {
     state,
     transcript,
@@ -27,9 +31,47 @@ export default function VoiceInterface() {
     reset,
   } = useVoiceStore();
 
+  const [textInput, setTextInput] = useState("");
+  const [chatHistory, setChatHistory] = useState<Message[]>(initialMessages);
+  const [currentChatId, setCurrentChatId] = useState<string | undefined>(chatId);
+  const [isTextMode, setIsTextMode] = useState(false);
+  const messagesRef = useRef<Message[]>(initialMessages);
+  const chatEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
-  const messagesRef = useRef<Message[]>([]);
+
+  // Update when chatId changes (when selecting a chat from sidebar)
+  useEffect(() => {
+    setCurrentChatId(chatId);
+    if (chatId) {
+      fetchChatMessages(chatId);
+    } else {
+      setChatHistory(initialMessages);
+      messagesRef.current = initialMessages;
+    }
+  }, [chatId, initialMessages]);
+
+  const fetchChatMessages = async (id: string) => {
+    try {
+      const res = await fetch(`/api/chat/history?chatId=${id}`);
+      if (res.ok) {
+        const data = await res.json();
+        const messages = data.messages.map((m: any) => ({
+          role: m.role,
+          content: m.content,
+        }));
+        setChatHistory(messages);
+        messagesRef.current = messages;
+      }
+    } catch (error) {
+      console.error("Failed to fetch chat messages:", error);
+    }
+  };
+
+  // Scroll to bottom of chat
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatHistory]);
 
   // Initialize speech recognition and synthesis
   useEffect(() => {
@@ -98,14 +140,8 @@ export default function VoiceInterface() {
     };
 
     recognitionRef.current.onend = () => {
-      if (state === "listening") {
-        // Restart recognition if still in listening state
-        try {
-          recognitionRef.current?.start();
-        } catch {
-          // Already started
-        }
-      }
+      // Don't auto-restart to avoid InvalidStateError
+      // User will manually click to start listening again
     };
 
     // Initialize SpeechSynthesis
@@ -115,41 +151,6 @@ export default function VoiceInterface() {
       recognitionRef.current?.stop();
       synthRef.current?.cancel();
     };
-  }, []);
-
-  const handleSendMessage = useCallback(async (text: string) => {
-    if (!text.trim()) return;
-
-    setState("processing");
-
-    // Add user message to history
-    messagesRef.current.push({ role: "user", content: text });
-
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: messagesRef.current }),
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to get response");
-      }
-
-      const data = await res.json();
-      const assistantMessage = data.message;
-
-      // Add assistant message to history
-      messagesRef.current.push({ role: "assistant", content: assistantMessage });
-      setResponse(assistantMessage);
-
-      // Speak the response
-      speakResponse(assistantMessage);
-    } catch (err) {
-      console.error("Error sending message:", err);
-      setError("Failed to get response from assistant");
-      setState("error");
-    }
   }, []);
 
   const speakResponse = useCallback((text: string) => {
@@ -183,9 +184,91 @@ export default function VoiceInterface() {
     synthRef.current.speak(utterance);
   }, []);
 
+  const handleSendMessage = useCallback(async (text: string) => {
+    if (!text.trim()) return;
+
+    setState("processing");
+
+    // Add user message to history
+    const userMessage: Message = { role: "user", content: text };
+    messagesRef.current.push(userMessage);
+    setChatHistory(prev => [...prev, userMessage]);
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          messages: messagesRef.current,
+          chatId: currentChatId,
+          isVoice: state === "listening",
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to get response");
+      }
+
+      const data = await res.json();
+      const assistantMessage: Message = { role: "assistant", content: data.message };
+
+      // Add assistant message to history
+      messagesRef.current.push(assistantMessage);
+      setChatHistory(prev => [...prev, assistantMessage]);
+      setResponse(data.message);
+
+      // Update chat ID if new chat was created
+      if (data.chatId && !currentChatId) {
+        setCurrentChatId(data.chatId);
+        onChatCreated?.(data.chatId);
+      }
+
+      // Speak the response only if not in text mode
+      if (!isTextMode) {
+        speakResponse(data.message);
+      } else {
+        setState("idle");
+      }
+      
+      // Update chat title if it's the first message
+      if (messagesRef.current.length === 2 && currentChatId) {
+        updateChatTitle(currentChatId, text.slice(0, 50));
+      }
+    } catch (err) {
+      console.error("Error sending message:", err);
+      setError("Failed to get response from assistant");
+      setState("error");
+    }
+  }, [currentChatId, state, onChatCreated, speakResponse]);
+
+  const handleTextSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (textInput.trim()) {
+      handleSendMessage(textInput);
+      setTextInput("");
+    }
+  };
+
+  const updateChatTitle = async (id: string, title: string) => {
+    try {
+      await fetch(`/api/chat/update-title`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chatId: id, title }),
+      });
+    } catch (error) {
+      console.error("Failed to update chat title:", error);
+    }
+  };
+
   const startListening = useCallback(() => {
     if (!recognitionRef.current) {
       setError("Speech recognition not initialized. Please refresh the page.");
+      return;
+    }
+
+    // Check if already listening
+    if (state === "listening") {
       return;
     }
 
@@ -207,7 +290,7 @@ export default function VoiceInterface() {
         setError("Could not start speech recognition. Please try again.");
       }
     }
-  }, []);
+  }, [state]);
 
   const stopListening = useCallback(() => {
     if (!recognitionRef.current) return;
@@ -222,12 +305,13 @@ export default function VoiceInterface() {
   }, []);
 
   const interruptSpeaking = useCallback(() => {
-    synthRef.current?.cancel();
+    if (synthRef.current) {
+      synthRef.current.cancel();
+    }
     setState("idle");
+    setResponse("");
     setTranscript("");
-    // Restart listening after interrupt
-    setTimeout(() => startListening(), 100);
-  }, [startListening]);
+  }, []);
 
   const getStateColor = (state: VoiceState) => {
     switch (state) {
@@ -274,9 +358,63 @@ export default function VoiceInterface() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center w-full max-w-md mx-auto p-6">
+    <div className="flex flex-col items-center justify-center w-full max-w-4xl mx-auto p-6">
+      {/* Mode Toggle */}
+      <div className="flex items-center gap-2 mb-4">
+        <button
+          onClick={() => setIsTextMode(false)}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+            !isTextMode 
+              ? "bg-blue-500 text-white" 
+              : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+          }`}
+        >
+          <Volume2 className="w-4 h-4" />
+          Голос
+        </button>
+        <button
+          onClick={() => setIsTextMode(true)}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+            isTextMode 
+              ? "bg-blue-500 text-white" 
+              : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+          }`}
+        >
+          <Type className="w-4 h-4" />
+          Текст
+        </button>
+      </div>
+
+      {/* Chat History */}
+      <div className="w-full h-64 mb-6 bg-white dark:bg-gray-900 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-800">
+        <div className="h-full overflow-y-auto p-4 space-y-3">
+          {chatHistory.length === 0 && (
+            <p className="text-center text-gray-400 dark:text-gray-600 text-sm py-8">
+              Почніть розмову голосом або текстом
+            </p>
+          )}
+          {chatHistory.map((msg, index) => (
+            <div
+              key={index}
+              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+            >
+              <div
+                className={`max-w-[80%] px-4 py-2 rounded-2xl ${
+                  msg.role === "user"
+                    ? "bg-blue-500 text-white rounded-br-md"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-bl-md"
+                }`}
+              >
+                <p className="text-sm">{msg.content}</p>
+              </div>
+            </div>
+          ))}
+          <div ref={chatEndRef} />
+        </div>
+      </div>
+
       {/* Status indicator */}
-      <div className="mb-8 text-center">
+      <div className="mb-6 text-center">
         <AnimatePresence mode="wait">
           <motion.div
             key={state}
@@ -290,7 +428,7 @@ export default function VoiceInterface() {
         </AnimatePresence>
       </div>
 
-      {/* Main orb/button */}
+      {/* Main orb/button with enhanced animations */}
       <div className="relative mb-8">
         <motion.button
           onClick={() => {
@@ -303,40 +441,54 @@ export default function VoiceInterface() {
             }
           }}
           disabled={state === "processing"}
-          className={`relative w-32 h-32 rounded-full flex items-center justify-center transition-all duration-300 ${
+          className={`relative w-32 h-32 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl ${
             state === "idle"
-              ? "bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600"
+              ? "bg-gradient-to-br from-gray-100 to-gray-300 hover:from-gray-200 hover:to-gray-400 dark:from-gray-700 dark:to-gray-900 dark:hover:from-gray-600 dark:hover:to-gray-800"
               : getStateColor(state)
-          } ${state === "processing" ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`}
+          } ${state === "processing" ? "cursor-not-allowed opacity-70" : "cursor-pointer"} ${state === "speaking" ? "pointer-events-auto" : ""}`}
           animate={
             state === "listening"
               ? {
-                  scale: [1, 1.1, 1],
-                  transition: { repeat: Infinity, duration: 1.5 },
+                  scale: [1, 1.05, 1],
                 }
               : state === "speaking"
               ? {
-                  scale: [1, 1.05, 1],
-                  transition: { repeat: Infinity, duration: 0.8 },
+                  scale: [1, 1.03, 1],
                 }
-              : {}
+              : state === "processing"
+              ? { scale: [1, 0.95, 1] }
+              : {
+                  scale: 1,
+                }
           }
+          transition={
+            state === "listening"
+              ? { repeat: Infinity, duration: 0.8, ease: "easeInOut" }
+              : state === "speaking"
+              ? { repeat: Infinity, duration: 0.5, ease: "easeInOut" }
+              : state === "processing"
+              ? { repeat: Infinity, duration: 0.6, ease: "easeInOut" }
+              : { duration: 0.3 }
+          }
+          whileHover={state === "idle" ? { scale: 1.05 } : {}}
+          whileTap={state === "idle" ? { scale: 0.95 } : {}}
+          style={{ pointerEvents: state === "processing" ? "none" : "auto" }}
         >
           {state === "idle" && <Mic className="w-12 h-12 text-gray-600 dark:text-gray-400" />}
           {state === "listening" && <Mic className="w-12 h-12 text-white" />}
-          {state === "processing" && <Loader2 className="w-12 h-12 text-white animate-spin" />}
+          {state === "processing" && <Loader2 className="w-12 h-12 text-white" />}
           {state === "speaking" && <Square className="w-12 h-12 text-white fill-white" />}
           {state === "error" && <AlertCircle className="w-12 h-12 text-white" />}
         </motion.button>
 
-        {/* Ripple effect when listening */}
+        {/* Enhanced ripple effect when listening */}
         {state === "listening" && (
           <>
             <motion.div
               className="absolute inset-0 rounded-full border-4 border-green-400"
               animate={{
-                scale: [1, 1.5],
-                opacity: [0.5, 0],
+                scale: [1, 2],
+                opacity: [0.6, 0],
               }}
               transition={{
                 repeat: Infinity,
@@ -347,14 +499,45 @@ export default function VoiceInterface() {
             <motion.div
               className="absolute inset-0 rounded-full border-4 border-green-400"
               animate={{
-                scale: [1, 1.5],
-                opacity: [0.5, 0],
+                scale: [1, 2],
+                opacity: [0.6, 0],
               }}
               transition={{
                 repeat: Infinity,
                 duration: 1.5,
                 ease: "easeOut",
                 delay: 0.5,
+              }}
+            />
+            <motion.div
+              className="absolute inset-0 rounded-full border-4 border-green-400"
+              animate={{
+                scale: [1, 2],
+                opacity: [0.6, 0],
+              }}
+              transition={{
+                repeat: Infinity,
+                duration: 1.5,
+                ease: "easeOut",
+                delay: 1,
+              }}
+            />
+          </>
+        )}
+
+        {/* Pulse effect when speaking */}
+        {state === "speaking" && (
+          <>
+            <motion.div
+              className="absolute inset-0 rounded-full bg-blue-400"
+              animate={{
+                scale: [1, 1.3],
+                opacity: [0.3, 0],
+              }}
+              transition={{
+                repeat: Infinity,
+                duration: 1,
+                ease: "easeOut",
               }}
             />
           </>
@@ -370,7 +553,7 @@ export default function VoiceInterface() {
             exit={{ opacity: 0, y: -10 }}
             className="mb-4 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg w-full"
           >
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">You said:</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Ви сказали:</p>
             <p className="text-gray-900 dark:text-white">{transcript}</p>
           </motion.div>
         )}
@@ -385,7 +568,7 @@ export default function VoiceInterface() {
             exit={{ opacity: 0, y: -10 }}
             className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg w-full"
           >
-            <p className="text-sm text-blue-600 dark:text-blue-400 mb-1">Assistant:</p>
+            <p className="text-sm text-blue-600 dark:text-blue-400 mb-1">Асистент:</p>
             <p className="text-gray-900 dark:text-white">{response}</p>
           </motion.div>
         )}
@@ -406,8 +589,27 @@ export default function VoiceInterface() {
         )}
       </AnimatePresence>
 
+      {/* Text Input */}
+      <form onSubmit={handleTextSubmit} className="w-full mt-6 flex gap-2">
+        <input
+          type="text"
+          value={textInput}
+          onChange={(e) => setTextInput(e.target.value)}
+          placeholder="Введіть повідомлення..."
+          className="flex-1 px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:text-white outline-none transition-all"
+          disabled={state === "processing"}
+        />
+        <button
+          type="submit"
+          disabled={!textInput.trim() || state === "processing"}
+          className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-xl transition-colors flex items-center gap-2"
+        >
+          <Send className="w-5 h-5" />
+        </button>
+      </form>
+
       {/* Instructions */}
-      <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
+      <div className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
         {state === "idle" && <p>Натисніть мікрофон щоб почати розмову</p>}
         {state === "listening" && <p>Натисніть щоб зупинити запис</p>}
         {state === "speaking" && <p className="text-blue-500 font-medium">Натисніть щоб перервати відповідь</p>}

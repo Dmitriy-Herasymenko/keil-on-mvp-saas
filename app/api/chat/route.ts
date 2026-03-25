@@ -2,7 +2,8 @@ import { Groq } from "groq-sdk";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { messages } from "@/db/schema";
+import { messages, chats } from "@/db/schema";
+import { eq, desc } from "drizzle-orm";
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { messages: userMessages, saveToHistory = true } = await req.json();
+    const { messages: userMessages, chatId, isVoice = false, saveToHistory = true } = await req.json();
 
     // Add system prompt as first message
     const messagesWithSystem = [
@@ -45,19 +46,43 @@ export async function POST(req: NextRequest) {
     // Save to database if enabled
     if (saveToHistory && userMessages.length > 0) {
       const lastUserMessage = userMessages[userMessages.length - 1];
+      
       if (lastUserMessage.role === "user") {
+        let currentChatId = chatId;
+        
+        // Create new chat if no chatId provided
+        if (!currentChatId) {
+          const [newChat] = await db.insert(chats).values({
+            userId: session.user.id,
+            title: lastUserMessage.content.slice(0, 50) + (lastUserMessage.content.length > 50 ? "..." : ""),
+          }).returning({ id: chats.id });
+          currentChatId = newChat.id;
+        } else {
+          // Update lastMessageAt
+          await db.update(chats)
+            .set({ lastMessageAt: new Date() })
+            .where(eq(chats.id, currentChatId));
+        }
+
         // Save user message
         await db.insert(messages).values({
+          chatId: currentChatId,
           content: lastUserMessage.content,
           role: "user",
-          userId: session.user.id,
+          isVoice,
         });
 
         // Save assistant response
         await db.insert(messages).values({
+          chatId: currentChatId,
           content: assistantMessage,
           role: "assistant",
-          userId: session.user.id,
+          isVoice: false,
+        });
+
+        return NextResponse.json({
+          message: assistantMessage,
+          chatId: currentChatId,
         });
       }
     }
