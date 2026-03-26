@@ -21,8 +21,15 @@ const SYSTEM_PROMPT_EN = `You are a helpful voice assistant. IMPORTANT:
 3. Be friendly and polite
 4. If you don't understand the question, ask to repeat`;
 
+const SYSTEM_PROMPT_DE = `Sie sind ein hilfreicher Sprachassistent. WICHTIG:
+1. Antworten Sie immer auf Deutsch, unabhängig von der Sprache der Frage
+2. Halten Sie Antworten kurz und klar (1-3 Sätze)
+3. Seien Sie freundlich und höflich
+4. Wenn Sie die Frage nicht verstehen, bitten Sie um Wiederholung`;
+
 function getSystemPrompt(language: string): string {
   if (language.startsWith("uk")) return SYSTEM_PROMPT_UA;
+  if (language.startsWith("de")) return SYSTEM_PROMPT_DE;
   return SYSTEM_PROMPT_EN;
 }
 
@@ -47,9 +54,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { messages: userMessages, chatId, isVoice = false, saveToHistory = true, browserLanguage = "en-US" } = await req.json();
+    const { messages: userMessages, chatId, isVoice = false, saveToHistory = true, browserLanguage = "en-US", locale = "en" } = await req.json();
 
-    const systemPrompt = isVoice ? getSystemPrompt(browserLanguage) : SYSTEM_PROMPT_UA;
+    const systemPrompt = getSystemPrompt(locale);
 
     const messagesWithSystem = [
       { role: "system", content: systemPrompt },

@@ -1,0 +1,36 @@
+{
+  "app": {
+    "title": "KeilOn Sprachassistent",
+    "description": "KI-Sprachassistent powered by Groq"
+  },
+  "chat": {
+    "newChat": "Neuer Chat",
+    "placeholder": "Nachricht eingeben...",
+    "send": "Senden",
+    "voiceMode": "Sprache",
+    "textMode": "Text",
+    "listening": "Hören...",
+    "processing": "Verarbeitung...",
+    "speaking": "Sprechen...",
+    "error": "Fehler",
+    "microphoneDenied": "Mikrofonzugriff verweigert. Bitte erlauben Sie den Mikrofonzugriff in Ihren Browsereinstellungen.",
+    "startConversation": "Konversation starten",
+    "stop": "Stopp"
+  },
+  "sidebar": {
+    "newChat": "Neuer Chat",
+    "chatHistory": "Chat-Verlauf",
+    "noChats": "Noch keine Chats",
+    "logout": "Abmelden"
+  },
+  "language": {
+    "title": "Sprache",
+    "en": "Englisch",
+    "de": "Deutsch",
+    "uk": "Ukrainisch"
+  },
+  "assistant": {
+    "greeting": "Hallo! Ich bin Ihr KI-Assistent. Wie kann ich Ihnen heute helfen?",
+    "systemPrompt": "Sie sind ein hilfreicher Sprachassistent. WICHTIG:\n1. Antworten Sie immer auf Deutsch, unabhängig von der Sprache der Frage\n2. Halten Sie Antworten kurz und klar (1-3 Sätze)\n3. Seien Sie freundlich und höflich\n4. Wenn Sie die Frage nicht verstehen, bitten Sie um Wiederholung"
+  }
+}

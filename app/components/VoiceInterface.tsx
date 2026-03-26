@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useCallback, useState, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslations, useLocale } from "next-intl";
 import { useVoiceStore, VoiceState } from "../store/voiceStore";
 import { Mic, Loader2, Volume2, AlertCircle, Square, Send, Type, Sparkles } from "lucide-react";
+import { Locale } from "@/i18n/config";
 
 interface Message {
   role: "user" | "assistant";
@@ -55,6 +57,9 @@ const MemoizedMessage = memo(({ msg, index, onPlay }: { msg: Message; index: num
 MemoizedMessage.displayName = "MemoizedMessage";
 
 export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initialMessages = [] }: VoiceInterfaceProps) {
+  const t = useTranslations("chat");
+  const locale = useLocale() as Locale;
+  
   const {
     state,
     transcript,
@@ -230,7 +235,7 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
     utterance.rate = 1;
     utterance.pitch = 1;
     utterance.volume = 1;
-    utterance.lang = "en-US";
+    utterance.lang = locale === 'de' ? 'de-DE' : locale === 'uk' ? 'uk-UA' : 'en-US';
 
     utterance.onstart = () => {
       setState("speaking");
@@ -300,7 +305,8 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
           messages: messagesRef.current,
           chatId: currentChatId,
           isVoice: state === "listening",
-          browserLanguage: navigator.language || "en-US",
+          browserLanguage: locale === 'de' ? 'de-DE' : locale === 'uk' ? 'uk-UA' : 'en-US',
+          locale: locale,
         }),
       });
 
