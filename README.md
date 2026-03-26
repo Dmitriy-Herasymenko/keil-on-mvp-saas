@@ -98,10 +98,4 @@ AUTH_URL=https://...
 - Було: `/chat/550e8400-e29b-41d4-a716-446655440000`
 - Стало: `/chat/pryvit-yak-spravy-xyz9`
 
-### iOS обмеження
-На iPhone/iPad SpeechSynthesis вимагає користувацької взаємодії. Додано кнопку "Прослухати" для текстового режиму.
 
-### Оптимізації
-- `React.memo` для повідомлень
-- `useCallback` для функцій
-- Окремі UUID та slug для API/URL
