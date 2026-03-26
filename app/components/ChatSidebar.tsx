@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, memo } from "react";
 import { Plus, MessageSquare, Trash2, Mic, Trash, Sparkles } from "lucide-react";
+import { useTranslations } from "../hooks/useTranslations";
 
 interface Chat {
   id: string;
@@ -25,18 +26,23 @@ const ChatItem = memo(({ chat, isActive, onSelect, onDelete }: {
   onSelect: (id: string, slug?: string) => void;
   onDelete: (e: React.MouseEvent, id: string) => void;
 }) => {
+  const { t, locale } = useTranslations();
+  
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
+    
+    const localeMap: Record<string, string> = { en: "en-US", de: "de-DE", uk: "uk-UA" };
+    const dateLocale = localeMap[locale] || "uk-UA";
 
     if (date.toDateString() === today.toDateString()) {
-      return date.toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" });
+      return date.toLocaleTimeString(dateLocale, { hour: "2-digit", minute: "2-digit" });
     } else if (date.toDateString() === yesterday.toDateString()) {
-      return "Вчора";
+      return t("sidebar.yesterday") || "Yesterday";
     } else {
-      return date.toLocaleDateString("uk-UA", { day: "numeric", month: "short" });
+      return date.toLocaleDateString(dateLocale, { day: "numeric", month: "short" });
     }
   };
 
@@ -84,6 +90,7 @@ const ChatItem = memo(({ chat, isActive, onSelect, onDelete }: {
 ChatItem.displayName = "ChatItem";
 
 export default function ChatSidebar({ onSelectChat, onNewChat, currentChatId }: ChatSidebarProps) {
+  const { t } = useTranslations();
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -103,7 +110,7 @@ export default function ChatSidebar({ onSelectChat, onNewChat, currentChatId }: 
 
   const deleteChat = useCallback(async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (!confirm("Видалити цей чат?")) return;
+    if (!confirm(t("sidebar.deleteChatConfirm"))) return;
 
     try {
       const res = await fetch(`/api/chat/${id}`, { method: "DELETE" });
@@ -116,7 +123,7 @@ export default function ChatSidebar({ onSelectChat, onNewChat, currentChatId }: 
   }, []);
 
   const clearAllHistory = useCallback(async () => {
-    if (!confirm("Ви впевнені, що хочете очистити всю історію?")) return;
+    if (!confirm(t("sidebar.clearHistoryConfirm"))) return;
 
     try {
       const res = await fetch("/api/chat/history", { method: "DELETE" });
@@ -153,8 +160,8 @@ export default function ChatSidebar({ onSelectChat, onNewChat, currentChatId }: 
           className="w-full flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all font-medium text-sm"
         >
           <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline">Новий чат</span>
-          <span className="sm:hidden">Новий</span>
+          <span className="hidden sm:inline">{t("sidebar.newChat")}</span>
+          <span className="sm:hidden">{t("sidebar.new")}</span>
         </button>
       </div>
 
@@ -171,10 +178,10 @@ export default function ChatSidebar({ onSelectChat, onNewChat, currentChatId }: 
               <MessageSquare className="w-5 h-5 text-zinc-400" />
             </div>
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              Поки що немає чатів
+              {t("sidebar.noChats")}
             </p>
             <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
-              Створіть новий чат щоб почати
+              {t("sidebar.createNewChat")}
             </p>
           </div>
         ) : (

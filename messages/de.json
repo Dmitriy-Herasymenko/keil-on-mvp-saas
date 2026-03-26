@@ -19,9 +19,14 @@
   },
   "sidebar": {
     "newChat": "Neuer Chat",
+    "new": "Neu",
     "chatHistory": "Chat-Verlauf",
     "noChats": "Noch keine Chats",
-    "logout": "Abmelden"
+    "createNewChat": "Erstellen Sie einen neuen Chat, um zu beginnen",
+    "logout": "Abmelden",
+    "yesterday": "Gestern",
+    "deleteChatConfirm": "Diesen Chat löschen?",
+    "clearHistoryConfirm": "Sind Sie sicher, dass Sie den gesamten Verlauf löschen möchten?"
   },
   "language": {
     "title": "Sprache",

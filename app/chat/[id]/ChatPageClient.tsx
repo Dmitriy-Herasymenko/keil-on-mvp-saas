@@ -6,9 +6,9 @@ import VoiceInterface from "../../components/VoiceInterface";
 import ChatSidebar from "../../components/ChatSidebar";
 import LogoutButton from "../../components/LogoutButton";
 import LanguageSelector from "../../components/LanguageSelector";
+import { useTranslations } from "../../hooks/useTranslations";
 import { useSession } from "next-auth/react";
 import { Menu, X } from "lucide-react";
-import { Locale } from "@/i18n/config";
 
 interface Chat {
   id: string;
@@ -25,6 +25,7 @@ export default function ChatPageClient({ initialChat, initialMessages }: ChatPag
   const params = useParams();
   const router = useRouter();
   const { data: session } = useSession();
+  const { t } = useTranslations();
   const chatId = params.id as string;
   const [chat, setChat] = useState<Chat | null>(initialChat);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -102,7 +103,7 @@ export default function ChatPageClient({ initialChat, initialMessages }: ChatPag
             </button>
             <div className="min-w-0 flex-1">
               <h1 className="text-sm sm:text-base font-semibold text-zinc-900 dark:text-zinc-100 truncate">
-                {chat?.title || initialChat?.title || "Новий чат"}
+                {chat?.title || initialChat?.title || t("chat.newChat")}
               </h1>
             </div>
           </div>

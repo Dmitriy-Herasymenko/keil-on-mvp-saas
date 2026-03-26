@@ -19,9 +19,14 @@
   },
   "sidebar": {
     "newChat": "New Chat",
+    "new": "New",
     "chatHistory": "Chat History",
     "noChats": "No chats yet",
-    "logout": "Logout"
+    "createNewChat": "Create a new chat to start",
+    "logout": "Logout",
+    "yesterday": "Yesterday",
+    "deleteChatConfirm": "Delete this chat?",
+    "clearHistoryConfirm": "Are you sure you want to clear all history?"
   },
   "language": {
     "title": "Language",

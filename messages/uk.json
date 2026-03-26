@@ -19,9 +19,14 @@
   },
   "sidebar": {
     "newChat": "Новий чат",
+    "new": "Новий",
     "chatHistory": "Історія чатів",
     "noChats": "Поки що немає чатів",
-    "logout": "Вийти"
+    "createNewChat": "Створіть новий чат щоб почати",
+    "logout": "Вийти",
+    "yesterday": "Вчора",
+    "deleteChatConfirm": "Видалити цей чат?",
+    "clearHistoryConfirm": "Ви впевнені, що хочете очистити всю історію?"
   },
   "language": {
     "title": "Мова",
