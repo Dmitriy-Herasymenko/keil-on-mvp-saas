@@ -3,6 +3,7 @@
 import { useEffect, useRef, useCallback, useState, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useVoiceStore, VoiceState } from "../store/voiceStore";
+import { useTranslations } from "../hooks/useTranslations";
 import { Mic, Loader2, Volume2, AlertCircle, Square, Send, Type, Sparkles } from "lucide-react";
 import { Locale } from "@/i18n/config";
 
@@ -56,14 +57,7 @@ const MemoizedMessage = memo(({ msg, index, onPlay }: { msg: Message; index: num
 MemoizedMessage.displayName = "MemoizedMessage";
 
 export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initialMessages = [] }: VoiceInterfaceProps) {
-  const [locale, setLocale] = useState<Locale>('uk');
-  
-  useEffect(() => {
-    const saved = localStorage.getItem('locale') as Locale;
-    if (saved && ['en', 'de', 'uk'].includes(saved)) {
-      setLocale(saved);
-    }
-  }, []);
+  const { t, locale } = useTranslations();
   
   const {
     state,
@@ -93,6 +87,7 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
   const hasProcessedFinalRef = useRef(false);
   const isProcessingMessageRef = useRef(false);
   const hasFetchedRef = useRef(false);
+  const isManuallyStoppedRef = useRef(false);
 
   useEffect(() => {
     setCurrentChatId(chatUuid || chatId);
@@ -143,6 +138,13 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatHistory]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      chatEndRef.current?.scrollIntoView({ behavior: "auto" });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined" || isInitialized.current) return;
@@ -252,6 +254,9 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
     };
 
     utterance.onerror = (event) => {
+      if (isManuallyStoppedRef.current) {
+        return;
+      }
       console.error("Speech synthesis error:", event);
       setState("idle");
     };
@@ -406,12 +411,16 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
   }, [state]);
 
   const interruptSpeaking = useCallback(() => {
+    isManuallyStoppedRef.current = true;
     if (synthRef.current) {
       synthRef.current.cancel();
     }
     setState("idle");
     setResponse("");
     setTranscript("");
+    setTimeout(() => {
+      isManuallyStoppedRef.current = false;
+    }, 100);
   }, []);
 
   const getStateColor = (state: VoiceState) => {
@@ -432,15 +441,15 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
   const getStateText = (state: VoiceState) => {
     switch (state) {
       case "listening":
-        return "Слухаю...";
+        return t("chat.listening");
       case "processing":
-        return "Думаю...";
+        return t("chat.processing");
       case "speaking":
-        return "Говорю... (натисніть щоб перервати)";
+        return t("chat.speaking");
       case "error":
-        return "Помилка";
+        return t("chat.error");
       default:
-        return "Натисніть щоб говорити";
+        return t("chat.startConversation");
     }
   };
 
@@ -459,8 +468,8 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
   }
 
   return (
-    <div className="flex flex-col items-center justify-start w-full max-w-3xl xl:max-w-4xl mx-auto px-3 sm:px-4 lg:px-6">
-      <div className="flex items-center gap-1 p-1 bg-zinc-100 dark:bg-zinc-900 rounded-xl mb-3 sm:mb-6">
+    <div className="flex flex-col items-center justify-start w-full max-w-4xl xl:max-w-5xl mx-auto px-3 sm:px-4 lg:px-6">
+      <div className="flex items-center gap-1 p-1 bg-zinc-100 dark:bg-zinc-900 rounded-xl mb-2 sm:mb-3">
         <button
           onClick={() => setIsTextMode(false)}
           className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm font-medium min-w-[80px] justify-center ${
@@ -470,7 +479,7 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
           }`}
         >
           <Volume2 className="w-4 h-4" />
-          <span>Голос</span>
+          <span>{t("chat.voiceMode")}</span>
         </button>
         <button
           onClick={() => setIsTextMode(true)}
@@ -481,7 +490,7 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
           }`}
         >
           <Type className="w-4 h-4" />
-          <span>Текст</span>
+          <span>{t("chat.textMode")}</span>
         </button>
       </div>
 
@@ -495,7 +504,7 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
                     <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-zinc-400" />
                   </div>
                   <p className="text-zinc-500 dark:text-zinc-400 text-sm">
-                    Почніть текстову розмову
+                    {t("chat.startTextConversation")}
                   </p>
                 </div>
               ) : (
@@ -519,7 +528,7 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
                 type="text"
                 value={textInput}
                 onChange={(e) => setTextInput(e.target.value)}
-                placeholder="Введіть повідомлення..."
+                placeholder={t("chat.placeholder")}
                 className="w-full px-4 sm:px-5 py-3 sm:py-3.5 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 focus:border-transparent dark:text-white outline-none transition-all text-sm sm:text-base"
                 disabled={state === "processing"}
               />
@@ -666,10 +675,10 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
 
       <div className="mt-4 sm:mt-6 text-center">
         <p className="text-xs text-zinc-400 dark:text-zinc-500">
-          {state === "idle" && "Натисніть мікрофон щоб почати"}
-          {state === "listening" && "Натисніть щоб зупинити"}
-          {state === "speaking" && "Натисніть щоб перервати"}
-          {state === "processing" && "Обробка..."}
+          {state === "idle" && t("chat.clickMicToStart")}
+          {state === "listening" && t("chat.clickToStop")}
+          {state === "speaking" && t("chat.clickToInterrupt")}
+          {state === "processing" && t("chat.processing")}
         </p>
       </div>
         </>

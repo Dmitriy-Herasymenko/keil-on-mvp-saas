@@ -14,7 +14,11 @@
     "speaking": "Говорю...",
     "error": "Помилка",
     "microphoneDenied": "Доступ до мікрофона заборонено. Будь ласка, дозвольте доступ до мікрофона в налаштуваннях браузера.",
-    "startConversation": "Почати розмову",
+    "startConversation": "Натисніть щоб говорити",
+    "startTextConversation": "Почніть текстову розмову",
+    "clickMicToStart": "Натисніть мікрофон щоб почати",
+    "clickToStop": "Натисніть щоб зупинити",
+    "clickToInterrupt": "Натисніть щоб перервати",
     "stop": "Стоп"
   },
   "sidebar": {
@@ -26,7 +30,8 @@
     "logout": "Вийти",
     "yesterday": "Вчора",
     "deleteChatConfirm": "Видалити цей чат?",
-    "clearHistoryConfirm": "Ви впевнені, що хочете очистити всю історію?"
+    "clearHistoryConfirm": "Ви впевнені, що хочете очистити всю історію?",
+    "clearHistory": "Очистити історію"
   },
   "language": {
     "title": "Мова",

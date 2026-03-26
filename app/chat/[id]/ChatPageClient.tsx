@@ -121,7 +121,7 @@ export default function ChatPageClient({ initialChat, initialMessages }: ChatPag
           </div>
         </header>
 
-        <main className="flex-1 flex flex-col items-center justify-start pt-8 sm:pt-12 lg:pt-16 pb-4 px-4 overflow-auto">
+        <main className="flex-1 flex flex-col items-center justify-start pt-8 sm:pt-12 lg:pt-4 pb-4 px-4 overflow-auto">
           <VoiceInterface 
             chatId={chatId} 
             chatUuid={chat?.id}

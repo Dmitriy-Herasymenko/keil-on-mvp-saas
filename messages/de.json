@@ -14,7 +14,11 @@
     "speaking": "Sprechen...",
     "error": "Fehler",
     "microphoneDenied": "Mikrofonzugriff verweigert. Bitte erlauben Sie den Mikrofonzugriff in Ihren Browsereinstellungen.",
-    "startConversation": "Konversation starten",
+    "startConversation": "Klicken Sie, um zu sprechen",
+    "startTextConversation": "Textkonversation starten",
+    "clickMicToStart": "Klicken Sie auf das Mikrofon, um zu starten",
+    "clickToStop": "Klicken Sie, um zu stoppen",
+    "clickToInterrupt": "Klicken Sie, um zu unterbrechen",
     "stop": "Stopp"
   },
   "sidebar": {
@@ -26,7 +30,8 @@
     "logout": "Abmelden",
     "yesterday": "Gestern",
     "deleteChatConfirm": "Diesen Chat löschen?",
-    "clearHistoryConfirm": "Sind Sie sicher, dass Sie den gesamten Verlauf löschen möchten?"
+    "clearHistoryConfirm": "Sind Sie sicher, dass Sie den gesamten Verlauf löschen möchten?",
+    "clearHistory": "Verlauf löschen"
   },
   "language": {
     "title": "Sprache",

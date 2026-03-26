@@ -14,7 +14,11 @@
     "speaking": "Speaking...",
     "error": "Error",
     "microphoneDenied": "Microphone access denied. Please allow microphone access in your browser settings.",
-    "startConversation": "Start conversation",
+    "startConversation": "Click to speak",
+    "startTextConversation": "Start text conversation",
+    "clickMicToStart": "Click microphone to start",
+    "clickToStop": "Click to stop",
+    "clickToInterrupt": "Click to interrupt",
     "stop": "Stop"
   },
   "sidebar": {
@@ -26,7 +30,8 @@
     "logout": "Logout",
     "yesterday": "Yesterday",
     "deleteChatConfirm": "Delete this chat?",
-    "clearHistoryConfirm": "Are you sure you want to clear all history?"
+    "clearHistoryConfirm": "Are you sure you want to clear all history?",
+    "clearHistory": "Clear history"
   },
   "language": {
     "title": "Language",

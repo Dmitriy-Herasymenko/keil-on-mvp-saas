@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "../hooks/useTranslations";
 import { locales, localeNames, type Locale } from "@/i18n/config";
 
 interface LanguageSelectorProps {
@@ -8,6 +9,7 @@ interface LanguageSelectorProps {
 }
 
 export default function LanguageSelector({ onChange }: LanguageSelectorProps) {
+  const { t } = useTranslations();
   const [locale, setLocale] = useState<Locale>('uk');
 
   useEffect(() => {
@@ -26,7 +28,7 @@ export default function LanguageSelector({ onChange }: LanguageSelectorProps) {
   return (
     <div className="flex items-center gap-2">
       <span className="text-sm text-zinc-500 dark:text-zinc-400 hidden sm:inline">
-        Мова:
+        {t("language.title")}:
       </span>
       <select
         value={locale}
