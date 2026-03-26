@@ -2,6 +2,7 @@ CREATE TABLE "chats" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" uuid NOT NULL,
 	"title" varchar(255) DEFAULT 'Новий чат' NOT NULL,
+	"slug" varchar(100) UNIQUE,
 	"is_active" boolean DEFAULT true,
 	"last_message_at" timestamp DEFAULT now(),
 	"created_at" timestamp DEFAULT now()

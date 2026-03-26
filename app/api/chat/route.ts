@@ -9,11 +9,22 @@ const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
 
-const SYSTEM_PROMPT = `Ти - корисний голосовий асистент. ВАЖЛИВО:
+const SYSTEM_PROMPT_UA = `Ти - корисний голосовий асистент. ВАЖЛИВО:
 1. Завжди відповідай українською мовою, незалежно від мови запитання
 2. Відповідай коротко та зрозуміло (1-3 речення)
 3. Будь дружелюбним та ввічливим
 4. Якщо не розумієш питання - попроси повторити`;
+
+const SYSTEM_PROMPT_EN = `You are a helpful voice assistant. IMPORTANT:
+1. Always respond in English, regardless of the question language
+2. Keep responses short and clear (1-3 sentences)
+3. Be friendly and polite
+4. If you don't understand the question, ask to repeat`;
+
+function getSystemPrompt(language: string): string {
+  if (language.startsWith("uk")) return SYSTEM_PROMPT_UA;
+  return SYSTEM_PROMPT_EN;
+}
 
 function generateSlug(title: string): string {
   const timestamp = Date.now().toString(36).slice(-4);
@@ -36,10 +47,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { messages: userMessages, chatId, isVoice = false, saveToHistory = true } = await req.json();
+    const { messages: userMessages, chatId, isVoice = false, saveToHistory = true, browserLanguage = "en-US" } = await req.json();
+
+    const systemPrompt = isVoice ? getSystemPrompt(browserLanguage) : SYSTEM_PROMPT_UA;
 
     const messagesWithSystem = [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: systemPrompt },
       ...userMessages,
     ];
 

@@ -82,14 +82,21 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
   const handleSendMessageRef = useRef<((text: string) => void) | null>(null);
   const hasProcessedFinalRef = useRef(false);
   const isProcessingMessageRef = useRef(false);
+  const hasFetchedRef = useRef(false);
 
   useEffect(() => {
     setCurrentChatId(chatUuid || chatId);
     setCurrentSlug(chatId);
     
+    if (messagesRef.current.length > 0) {
+      console.log("[INIT] Already initialized, skipping");
+      return;
+    }
+    
     if (initialMessages.length > 0) {
       setChatHistory(initialMessages);
       messagesRef.current = [...initialMessages];
+      hasFetchedRef.current = true;
       console.log("[INIT] Loaded initial messages:", initialMessages.length);
     } else {
       const idToFetch = chatUuid || chatId;
@@ -100,10 +107,11 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
   }, [chatId, chatUuid, initialMessages]);
 
   const fetchChatMessages = async (id: string) => {
-    if (chatHistory.length > 0) {
-      console.log("[SKIP] Already have messages, skipping fetch");
+    if (hasFetchedRef.current || messagesRef.current.length > 0) {
+      console.log("[SKIP] Already fetched or have messages");
       return;
     }
+    hasFetchedRef.current = true;
     
     try {
       const res = await fetch(`/api/chat/history?chatId=${id}`);
@@ -209,18 +217,20 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
   }, []);
 
   const speakResponse = useCallback((text: string) => {
-    if (!synthRef.current) {
+    const synth = synthRef.current || window.speechSynthesis;
+    if (!synth) {
+      console.error("[TTS] Speech synthesis not available");
       setState("idle");
       return;
     }
 
-    synthRef.current.cancel();
+    synth.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 1;
     utterance.pitch = 1;
     utterance.volume = 1;
-    utterance.lang = "uk-UA";
+    utterance.lang = "en-US";
 
     utterance.onstart = () => {
       setState("speaking");
@@ -236,11 +246,11 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
       setState("idle");
     };
 
-    if (isIOS() && synthRef.current.paused) {
-      synthRef.current.resume();
+    if (isIOS() && synth.paused) {
+      synth.resume();
     }
 
-    synthRef.current.speak(utterance);
+    synth.speak(utterance);
   }, [isIOS]);
 
   const stopListening = useCallback(() => {
@@ -248,7 +258,6 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
 
     try {
       recognitionRef.current.stop();
-      synthRef.current?.cancel();
       setState("idle");
     } catch (err) {
       console.error("Error stopping recognition:", err);
@@ -279,11 +288,8 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
       lastMessage.content === text;
     
     if (!isDuplicate) {
-      messagesRef.current.push(userMessage);
+      messagesRef.current = [...messagesRef.current, userMessage];
       setChatHistory(prev => [...prev, userMessage]);
-      console.log("[UI] Added user message:", text, "Total messages:", messagesRef.current.length);
-    } else {
-      console.log("[UI] Duplicate message blocked:", text);
     }
 
     try {
@@ -294,6 +300,7 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
           messages: messagesRef.current,
           chatId: currentChatId,
           isVoice: state === "listening",
+          browserLanguage: navigator.language || "en-US",
         }),
       });
 
@@ -306,7 +313,7 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
       const data = await res.json();
       const assistantMessage: Message = { role: "assistant", content: data.message };
 
-      messagesRef.current.push(assistantMessage);
+      messagesRef.current = [...messagesRef.current, assistantMessage];
       setChatHistory(prev => [...prev, assistantMessage]);
       setResponse(data.message);
 
