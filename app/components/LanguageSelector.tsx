@@ -1,25 +1,32 @@
 "use client";
 
-import { useLocale, useTranslations } from "next-intl";
-import { useRouter, usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
 import { locales, localeNames, type Locale } from "@/i18n/config";
 
-export default function LanguageSelector() {
-  const t = useTranslations("language");
-  const locale = useLocale() as Locale;
-  const router = useRouter();
-  const pathname = usePathname();
+interface LanguageSelectorProps {
+  onChange?: (locale: Locale) => void;
+}
+
+export default function LanguageSelector({ onChange }: LanguageSelectorProps) {
+  const [locale, setLocale] = useState<Locale>('uk');
+
+  useEffect(() => {
+    const saved = localStorage.getItem('locale') as Locale;
+    if (saved && locales.includes(saved)) {
+      setLocale(saved);
+    }
+  }, []);
 
   const handleChange = (newLocale: Locale) => {
-    // Replace current locale in pathname with new one
-    const newPathname = pathname.replace(`/${locale}`, `/${newLocale}`);
-    router.push(newPathname);
+    setLocale(newLocale);
+    localStorage.setItem('locale', newLocale);
+    onChange?.(newLocale);
   };
 
   return (
     <div className="flex items-center gap-2">
       <span className="text-sm text-zinc-500 dark:text-zinc-400 hidden sm:inline">
-        {t("title")}:
+        Мова:
       </span>
       <select
         value={locale}

@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useTranslations, useLocale } from "next-intl";
 import VoiceInterface from "../../components/VoiceInterface";
 import ChatSidebar from "../../components/ChatSidebar";
 import LogoutButton from "../../components/LogoutButton";
 import LanguageSelector from "../../components/LanguageSelector";
 import { useSession } from "next-auth/react";
 import { Menu, X } from "lucide-react";
+import { Locale } from "@/i18n/config";
 
 interface Chat {
   id: string;
@@ -107,7 +107,7 @@ export default function ChatPageClient({ initialChat, initialMessages }: ChatPag
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 ml-2">
-            <LanguageSelector />
+            <LanguageSelector onChange={(locale) => window.location.reload()} />
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs sm:text-sm font-medium">
                 {session?.user?.name?.charAt(0) || session?.user?.email?.charAt(0) || "U"}

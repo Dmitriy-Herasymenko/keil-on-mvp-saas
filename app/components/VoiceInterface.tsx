@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useCallback, useState, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useTranslations, useLocale } from "next-intl";
 import { useVoiceStore, VoiceState } from "../store/voiceStore";
 import { Mic, Loader2, Volume2, AlertCircle, Square, Send, Type, Sparkles } from "lucide-react";
 import { Locale } from "@/i18n/config";
@@ -57,8 +56,14 @@ const MemoizedMessage = memo(({ msg, index, onPlay }: { msg: Message; index: num
 MemoizedMessage.displayName = "MemoizedMessage";
 
 export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initialMessages = [] }: VoiceInterfaceProps) {
-  const t = useTranslations("chat");
-  const locale = useLocale() as Locale;
+  const [locale, setLocale] = useState<Locale>('uk');
+  
+  useEffect(() => {
+    const saved = localStorage.getItem('locale') as Locale;
+    if (saved && ['en', 'de', 'uk'].includes(saved)) {
+      setLocale(saved);
+    }
+  }, []);
   
   const {
     state,
