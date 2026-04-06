@@ -258,7 +258,8 @@ export default function VoiceInterface({ chatId, chatUuid, onChatCreated, initia
         return;
       }
       console.error("Speech synthesis error:", event);
-      setState("idle");
+      setError("Помилка синтезу мowy. Будь ласка, спробуйте ще раз.");
+      setState("error");
     };
 
     if (isIOS() && synth.paused) {
