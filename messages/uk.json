@@ -42,5 +42,13 @@
   "assistant": {
     "greeting": "Привіт! Я ваш AI асистент. Чим можу допомогти?",
     "systemPrompt": "Ти - корисний голосовий асистент. ВАЖЛИВО:\n1. Завжди відповідай українською мовою, незалежно від мови запитання\n2. Відповідай коротко та зрозуміло (1-3 речення)\n3. Будь дружелюбним та ввічливим\n4. Якщо не розумієш питання - попроси повторити"
+  },
+    "loginPage": {
+    "title": "Welcome back",
+    "subtitle": "Sign in to your account",
+    "placeholderMail": "Enter your email",
+    "placeholderPassword": "Enter your password",
+    "bthLogin": "Sign In",
+    "forgotPassword": "Forgot password"
   }
 }

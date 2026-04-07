@@ -6,8 +6,9 @@ import { Locale } from "@/i18n/config";
 import en from "@/messages/en.json";
 import de from "@/messages/de.json";
 import uk from "@/messages/uk.json";
+import ru from "@/messages/ru.json";
 
-const messages = { en, de, uk };
+const messages = { en, de, uk, ru };
 
 export function useTranslations() {
   const [locale, setLocale] = useState<Locale>("uk");
@@ -15,7 +16,7 @@ export function useTranslations() {
 
   useEffect(() => {
     const saved = localStorage.getItem("locale") as Locale;
-    if (saved && ["en", "de", "uk"].includes(saved)) {
+    if (saved && ["en", "de", "uk", "ru"].includes(saved)) {
       setLocale(saved);
     }
     setIsLoaded(true);

@@ -1,0 +1,55 @@
+{
+    "app": {
+        "title": "KeilOn Voice Assistant",
+        "description": "AI voice assistant powered by Groq"
+    },
+    "chat": {
+        "newChat": "New Chat",
+        "placeholder": "Type your message...",
+        "send": "Send",
+        "voiceMode": "Voice",
+        "textMode": "Text",
+        "listening": "Listening...",
+        "processing": "Processing...",
+        "speaking": "Speaking...",
+        "error": "Error",
+        "microphoneDenied": "Microphone access denied. Please allow microphone access in your browser settings.",
+        "startConversation": "Click to speak",
+        "startTextConversation": "Start text conversation",
+        "clickMicToStart": "Click microphone to start",
+        "clickToStop": "Click to stop",
+        "clickToInterrupt": "Click to interrupt",
+        "stop": "Stop"
+    },
+    "sidebar": {
+        "newChat": "New Chat",
+        "new": "New",
+        "chatHistory": "Chat History",
+        "noChats": "No chats yet",
+        "createNewChat": "Create a new chat to start",
+        "logout": "Logout",
+        "yesterday": "Yesterday",
+        "deleteChatConfirm": "Delete this chat?",
+        "clearHistoryConfirm": "Are you sure you want to clear all history?",
+        "clearHistory": "Clear history"
+    },
+    "language": {
+        "title": "Language",
+        "en": "English",
+        "de": "German",
+        "uk": "Ukrainian",
+        "ru": "Russian"
+    },
+    "assistant": {
+        "greeting": "Hello! I'm your AI assistant. How can I help you today?",
+        "systemPrompt": "You are a helpful voice assistant. IMPORTANT:\n1. Always respond in English, regardless of the question language\n2. Keep responses short and clear (1-3 sentences)\n3. Be friendly and polite\n4. If you don't understand the question, ask to repeat"
+    },
+    "loginPage": {
+        "title": "С возвращением",
+        "subtitle": "Войдите в свой аккаунт",
+        "placeholderMail": "Введите ваш email",
+        "placeholderPassword": "Введите ваш пароль",
+        "bthLogin": "Войти",
+        "forgotPassword": "Забыли пароль?"
+    }
+}
