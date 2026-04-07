@@ -35,8 +35,8 @@ const InfoTooltip = ({ text }: { text: string }) => (
 
 const OnboardingCard = ({ icon, label, tooltip, children, menuType, activeMenu, options, selectedValue, onSelect }: any) => (
     <div className="relative rounded-[20px] border-[2px] border-white/10 bg-[#1B1624]/60  py-[16px] px-[20px] lg:py-[23px] lg:px-[26px] flex items-center gap-3 lg:gap-4 transition-all max-w-[393px]">
-        <div className="w-[44px] h-[44px] lg:w-[48px] lg:h-[48px] shrink-0">
-            <Image src={icon} alt="" width={48} height={48} />
+        <div className="w-[44px] h-[44px] lg:w-[48px] lg:h-[48px] shrink-0 flex items-center justify-center">
+            <Image src={icon} alt="" width={48} height={48} className="object-contain"/>
         </div>
         <div className="flex-grow pr-6 lg:pr-0">
             <label className="block font-sora font-semibold text-[16px] lg:text-[18px] text-white mb-[6px] lg:mb-[11px] leading-tight">{label}</label>
@@ -157,7 +157,7 @@ export default function OnboardingPage() {
 
                         {/* Voice */}
                         <div className={`relative shrink-0 w-full max-w-[393px] ${activeMenu === 'voice' ? 'z-[50]' : 'z-[7]'}`}>
-                            <OnboardingCard icon="/icons/onboardingMode.svg" label="KeilOn has" tooltip="Can be set with voice later" menuType="voice" activeMenu={activeMenu} options={VOICES} selectedValue={formData.voice} onSelect={(val: any) => { setFormData({ ...formData, voice: val }); setActiveMenu(null); }}>
+                            <OnboardingCard icon="/icons/onboardingVoice.svg" label="KeilOn has" tooltip="Can be set with voice later" menuType="voice" activeMenu={activeMenu} options={VOICES} selectedValue={formData.voice} onSelect={(val: any) => { setFormData({ ...formData, voice: val }); setActiveMenu(null); }}>
                                 <button onClick={() => toggleMenu("voice")} className={selectStyle}>
                                     <span>{formData.voice}</span>
                                     <Image src="/icons/chevron-right.svg" alt="" width={10} height={10} className={`transition-transform duration-300 ${activeMenu === "voice" ? "rotate-90" : ""}`} />
