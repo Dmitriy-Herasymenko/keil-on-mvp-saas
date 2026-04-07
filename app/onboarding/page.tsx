@@ -39,7 +39,7 @@ const OnboardingCard = ({ icon, label, tooltip, children, menuType, activeMenu, 
             <Image src={icon} alt="" width={48} height={48} className="object-contain"/>
         </div>
         <div className="flex-grow pr-6 lg:pr-0">
-            <label className="block font-sora font-semibold text-[16px] lg:text-[18px] text-white mb-[6px] lg:mb-[11px] leading-tight">{label}</label>
+            <label className="block font-semibold text-[16px] lg:text-[18px] text-white mb-[6px] lg:mb-[11px] leading-tight">{label}</label>
             {children}
         </div>
         <InfoTooltip text={tooltip} />
