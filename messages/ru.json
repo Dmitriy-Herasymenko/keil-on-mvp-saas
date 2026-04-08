@@ -21,6 +21,18 @@
         "clickToInterrupt": "Click to interrupt",
         "stop": "Stop"
     },
+    "header": {
+        "settings": "Настройки",
+        "logout": "Выйти",
+        "selectModeTitle": "Выберите режим",
+        "close": "Закрыть",
+        "modes": {
+            "friendly": "Дружелюбный",
+            "formal": "Официальный",
+            "casual": "Повседневный",
+            "professional": "Профессиональный"
+        }
+    },
     "sidebar": {
         "newChat": "New Chat",
         "new": "New",
@@ -51,5 +63,59 @@
         "placeholderPassword": "Введите ваш пароль",
         "bthLogin": "Войти",
         "forgotPassword": "Забыли пароль?"
+    },
+    "onBoarding": {
+        "welcome": "Добро пожаловать в KeilOn",
+        "subtitle": "Ваш личный голосовой ИИ-помощник",
+        "nameLabel": "Имя вашего KeilOn",
+        "nameTooltip": "Можно изменить голосом позже",
+        "namePlaceholder": "Алекс",
+        "languageLabel": "Язык KeilOn",
+        "languageTooltip": "Можно изменить позже в настройках",
+        "modeLabel": "KeilOn поддерживает",
+        "modeTooltip": "Режим можно изменить позже",
+        "voiceLabel": "У KeilOn голос",
+        "voiceTooltip": "Голос можно изменить позже",
+        "btnGetStarted": "Начать работу",
+        "btnSkip": "Пропустить",
+        "languages": {
+            "English": "Английский",
+            "Deutsch": "Немецкий",
+            "Русский": "Русский"
+        },
+        "modes": {
+            "friendly": "Дружелюбный",
+            "formal": "Официальный",
+            "casual": "Повседневный",
+            "professional": "Профессиональный"
+        },
+        "voices": {
+            "alloy": "Аллой",
+            "echo": "Эхо",
+            "fable": "Фейбл",
+            "onyx": "Оникс",
+            "nova": "Нова",
+            "shimmer": "Шиммер"
+        }
+    },
+    "assistantPage": {
+        "greeting": "Привет, Имя!",
+        "statusSpeaking": "Говорю...",
+        "statusListening": "Слушаю...",
+        "micStatusOff": "Микрофон выключен",
+        "micStatusOn": "Микрофон включен",
+        "tipsTitle": "Подсказки",
+        "settings": "Настройки",
+        "logout": "Выйти",
+        "tips": {
+            "calendar": {
+                "title": "Подключить календарь",
+                "desc": "Создавайте и обновляйте события голосом"
+            },
+            "whatsapp": {
+                "title": "Подключить WhatsApp",
+                "desc": "Читайте и пишите сообщения друзьям через KeilOn"
+            }
+        }
     }
 }

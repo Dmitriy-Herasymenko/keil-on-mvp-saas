@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "../hooks/useTranslations";
 
 const LANGUAGES = ["English", "Deutsch", "Русский"] as const;
 const MODES = ["friendly", "formal", "casual", "professional"] as const;
@@ -33,7 +34,7 @@ const InfoTooltip = ({ text }: { text: string }) => (
     </div>
 );
 
-const OnboardingCard = ({ icon, label, tooltip, children, menuType, activeMenu, options, selectedValue, onSelect }: any) => (
+const OnboardingCard = ({ icon, label, tooltip, children, menuType, activeMenu, options, selectedValue, onSelect, t }: any) => (
     <div className="relative rounded-[20px] border-[2px] border-white/10 bg-[#1B1624]/60  py-[16px] px-[20px] lg:py-[23px] lg:px-[26px] flex items-center gap-3 lg:gap-4 transition-all max-w-[393px]">
         <div className="w-[44px] h-[44px] lg:w-[48px] lg:h-[48px] shrink-0 flex items-center justify-center">
             <Image src={icon} alt="" width={48} height={48} className="object-contain"/>
@@ -53,7 +54,7 @@ const OnboardingCard = ({ icon, label, tooltip, children, menuType, activeMenu, 
                     <button
                         key={opt}
                         onClick={() => onSelect?.(opt)}
-                        className={`cursor-pointer   w-full text-center lg:text-left px-5 py-3 rounded-[10px] text-[15px] transition-all ${selectedValue === opt ? 'bg-white/10 text-white' : 'text-white'}`}
+                        className={`cursor-pointer  hover:bg-white/10 hover:text-white  w-full text-center lg:text-left px-5 py-3 rounded-[10px] text-[15px] transition-all ${selectedValue === opt ? 'bg-white/10 text-white' : 'text-white'}`}
                     >
                         {opt}
                     </button>
@@ -74,6 +75,7 @@ export default function OnboardingPage() {
 
     const [activeMenu, setActiveMenu] = useState<SelectionType>(null);
     const menuRef = useRef<HTMLDivElement>(null);
+    const { t } = useTranslations();
 
     useEffect(() => {
         const isMobile = window.innerWidth < 1024;
@@ -112,8 +114,8 @@ export default function OnboardingPage() {
 
                 {/* Header */}
                 <div className="text-center mb-5 lg:mb-14 shrink-0">
-                    <h1 className="font-sora text-[32px] lg:text-[48px] font-semibold mb-1 lg:mb-3">Welcome to KeilOn</h1>
-                    <p className="text-[#967ABD] font-medium text-[16px] lg:text-[20px]">Your personal voice AI assistant</p>
+                    <h1 className="font-sora text-[32px] lg:text-[48px] font-semibold mb-1 lg:mb-3">{t("onBoarding.welcome")}</h1>
+                    <p className="text-[#967ABD] font-medium text-[16px] lg:text-[20px]">{t("onBoarding.subtitle")}</p>
                 </div>
 
 
@@ -125,19 +127,19 @@ export default function OnboardingPage() {
 
                         {/* Name */}
                         <div className="relative shrink-0 z-[10] w-full max-w-[393px]">
-                            <OnboardingCard icon="/icons/onboardingName.svg" label="Your KeilOn's name is" tooltip="Can be set with voice later" menuType={null} activeMenu={null}>
+                            <OnboardingCard icon="/icons/onboardingName.svg" label={t("onBoarding.nameLabel")} tooltip={t("onBoarding.nameTooltip")} menuType={null} activeMenu={null}>
                                 <input
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                     className="w-full rounded-[20px] bg-white/10 outline-none text-[14px] lg:text-[15px] text-white py-[8px] px-[14px] lg:py-[9px] lg:px-[16px] border border-white/5 focus:border-[#B24CFA]/50 transition-all placeholder:text-white/20"
-                                    placeholder="Alex"
+                                    placeholder={t("onBoarding.namePlaceholder")}
                                 />
                             </OnboardingCard>
                         </div>
 
                         {/* Language */}
                         <div className={`relative shrink-0 w-full max-w-[393px] ${activeMenu === 'lang' ? 'z-[50]' : 'z-[9]'}`}>
-                            <OnboardingCard icon="/icons/onboardingLang.svg" label="KeilOn's language is" tooltip="Can be set with language later" menuType="lang" activeMenu={activeMenu} options={LANGUAGES} selectedValue={formData.language} onSelect={(val: any) => { setFormData({ ...formData, language: val }); setActiveMenu(null); }}>
+                            <OnboardingCard icon="/icons/onboardingLang.svg" label={t("onBoarding.languageLabel")} tooltip={t("onBoarding.languageTooltip")} menuType="lang" activeMenu={activeMenu} options={LANGUAGES} selectedValue={formData.language} onSelect={(val: any) => { setFormData({ ...formData, language: val }); setActiveMenu(null); }}>
                                 <button onClick={() => toggleMenu("lang")} className={selectStyle}>
                                     <span>{formData.language}</span>
                                     <Image src="/icons/chevron-right.svg" alt="" width={10} height={10} className={`transition-transform duration-300 ${activeMenu === "lang" ? "rotate-90" : ""}`} />
@@ -147,7 +149,7 @@ export default function OnboardingPage() {
 
                         {/* Mode */}
                         <div className={`relative shrink-0 w-full max-w-[393px] ${activeMenu === 'mode' ? 'z-[50]' : 'z-[8]'}`}>
-                            <OnboardingCard icon="/icons/onboardingMode.svg" label="KeilOn maintains" tooltip="Can be set with mode later" menuType="mode" activeMenu={activeMenu} options={MODES} selectedValue={formData.mode} onSelect={(val: any) => { setFormData({ ...formData, mode: val }); setActiveMenu(null); }}>
+                            <OnboardingCard icon="/icons/onboardingMode.svg" label={t("onBoarding.modeLabel")} tooltip={t("onBoarding.modeTooltip")} menuType="mode" activeMenu={activeMenu} options={MODES} selectedValue={formData.mode} onSelect={(val: any) => { setFormData({ ...formData, mode: val }); setActiveMenu(null); }}>
                                 <button onClick={() => toggleMenu("mode")} className={selectStyle}>
                                     <span>{formData.mode}</span>
                                     <Image src="/icons/chevron-right.svg" alt="" width={10} height={10} className={`transition-transform duration-300 ${activeMenu === "mode" ? "rotate-90" : ""}`} />
@@ -157,7 +159,7 @@ export default function OnboardingPage() {
 
                         {/* Voice */}
                         <div className={`relative shrink-0 w-full max-w-[393px] ${activeMenu === 'voice' ? 'z-[50]' : 'z-[7]'}`}>
-                            <OnboardingCard icon="/icons/onboardingVoice.svg" label="KeilOn has" tooltip="Can be set with voice later" menuType="voice" activeMenu={activeMenu} options={VOICES} selectedValue={formData.voice} onSelect={(val: any) => { setFormData({ ...formData, voice: val }); setActiveMenu(null); }}>
+                            <OnboardingCard icon="/icons/onboardingVoice.svg" label={t("onBoarding.voiceLabel")} tooltip={t("onBoarding.voiceTooltip")} menuType="voice" activeMenu={activeMenu} options={VOICES} selectedValue={formData.voice} onSelect={(val: any) => { setFormData({ ...formData, voice: val }); setActiveMenu(null); }}>
                                 <button onClick={() => toggleMenu("voice")} className={selectStyle}>
                                     <span>{formData.voice}</span>
                                     <Image src="/icons/chevron-right.svg" alt="" width={10} height={10} className={`transition-transform duration-300 ${activeMenu === "voice" ? "rotate-90" : ""}`} />
@@ -171,12 +173,12 @@ export default function OnboardingPage() {
                 <div className="mt-auto w-full flex flex-col items-center gap-4 lg:gap-6 shrink-0 pt-4 pb-6 lg:pb-0 bg-[#0C0A10] ">
                     <button
                         onClick={handleStart}
-                        className="w-full lg:w-auto cursor-pointer rounded-full text-white font-[600] text-[18px] lg:text-[20px] py-[14px] lg:py-[16px] px-[60px] lg:px-[102px] transition-all duration-300 hover:scale-[1.02] active:scale-95 bg-gradient-to-b from-[#E986FA] to-[#9739C0] border-[2px] border-transparent bg-origin-border [background-clip:padding-box,border-box] [background-image:linear-gradient(to_bottom,#E986FA,#9739C0),linear-gradient(to_bottom,#6C2BFF_0%,#FFFFFF_19%,#FFFFFF_29%,transparent_100%)]"
+                        className="w-full lg:w-auto cursor-pointer rounded-full text-white font-[600] text-[18px] lg:text-[20px] py-[14px] lg:py-[16px] px-[60px] lg:px-[102px] transition-all duration-300 hover:scale-[1.02] active:scale-95 bg-gradient-to-b from-[#E986FA] to-[#9739C0] border-[2px] border-white/10"
                     >
-                        Get Started
+                        {t("onBoarding.btnGetStarted")}
                     </button>
                     <button onClick={() => router.push("/")} className="text-white/40 text-[16px] lg:text-[20px] font-[500] hover:text-white transition-colors cursor-pointer">
-                        Skip for now
+                        {t("onBoarding.btnSkip")}
                     </button>
                 </div>
             </main>

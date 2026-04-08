@@ -21,6 +21,18 @@
     "clickToInterrupt": "Klicken Sie, um zu unterbrechen",
     "stop": "Stopp"
   },
+  "header": {
+    "settings": "Einstellungen",
+    "logout": "Abmelden",
+    "selectModeTitle": "Modus wählen",
+    "close": "Schließen",
+    "modes": {
+      "friendly": "Freundlich",
+      "formal": "Formal",
+      "casual": "Lässig",
+      "professional": "Professionell"
+    }
+  },
   "sidebar": {
     "newChat": "Neuer Chat",
     "new": "Neu",
@@ -50,5 +62,59 @@
     "placeholderPassword": "Passwort eingeben",
     "bthLogin": "Anmelden",
     "forgotPassword": "Passwort vergessen?"
+  },
+  "onBoarding": {
+    "welcome": "Willkommen bei KeilOn",
+    "subtitle": "Ihr persönlicher KI-Sprachassistent",
+    "nameLabel": "Der Name Ihres KeilOn ist",
+    "nameTooltip": "Kann später per Stimme geändert werden",
+    "namePlaceholder": "Alex",
+    "languageLabel": "Die Sprache von KeilOn ist",
+    "languageTooltip": "Kann später geändert werden",
+    "modeLabel": "KeilOn pflegt",
+    "modeTooltip": "Modus kann später geändert werden",
+    "voiceLabel": "KeilOn hat",
+    "voiceTooltip": "Stimme kann später geändert werden",
+    "btnGetStarted": "Loslegen",
+    "btnSkip": "Vorerst überspringen",
+    "languages": {
+      "English": "Englisch",
+      "Deutsch": "Deutsch",
+      "Русский": "Russisch"
+    },
+    "modes": {
+      "friendly": "Freundlich",
+      "formal": "Formal",
+      "casual": "Lässig",
+      "professional": "Professionell"
+    },
+    "voices": {
+      "alloy": "Alloy",
+      "echo": "Echo",
+      "fable": "Fable",
+      "onyx": "Onyx",
+      "nova": "Nova",
+      "shimmer": "Shimmer"
+    }
+  },
+  "assistantPage": {
+    "greeting": "Hallo, Name!",
+    "statusSpeaking": "Sprechen...",
+    "statusListening": "Zuhören...",
+    "micStatusOff": "Mikrofon ist aus",
+    "micStatusOn": "Mikrofon ist an",
+    "tipsTitle": "Tipps",
+    "settings": "Einstellungen",
+    "logout": "Abmelden",
+    "tips": {
+      "calendar": {
+        "title": "Kalender verbinden",
+        "desc": "Events erstellen und bearbeiten nur mit Ihrer Stimme"
+      },
+      "whatsapp": {
+        "title": "WhatsApp verbinden",
+        "desc": "Nachrichten lesen und schreiben mit KeilOn"
+      }
+    }
   }
 }

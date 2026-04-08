@@ -21,6 +21,18 @@
     "clickToInterrupt": "Click to interrupt",
     "stop": "Stop"
   },
+  "header": {
+    "settings": "Settings",
+    "logout": "Log out",
+    "selectModeTitle": "Select Mode",
+    "close": "Close",
+    "modes": {
+      "friendly": "Friendly",
+      "formal": "Formal",
+      "casual": "Casual",
+      "professional": "Professional"
+    }
+  },
   "sidebar": {
     "newChat": "New Chat",
     "new": "New",
@@ -51,5 +63,59 @@
     "placeholderPassword": "Enter your password",
     "bthLogin": "Sign In",
     "forgotPassword": "Forgot password"
+  },
+  "onBoarding": {
+    "welcome": "Welcome to KeilOn",
+    "subtitle": "Your personal voice AI assistant",
+    "nameLabel": "Your KeilOn's name is",
+    "nameTooltip": "Can be set with voice later",
+    "namePlaceholder": "Alex",
+    "languageLabel": "KeilOn's language is",
+    "languageTooltip": "Can be set with language later",
+    "modeLabel": "KeilOn maintains",
+    "modeTooltip": "Can be set with mode later",
+    "voiceLabel": "KeilOn has",
+    "voiceTooltip": "Can be set with voice later",
+    "btnGetStarted": "Get Started",
+    "btnSkip": "Skip for now",
+    "languages": {
+      "English": "English",
+      "Deutsch": "German",
+      "Русский": "Russian"
+    },
+    "modes": {
+      "friendly": "Friendly",
+      "formal": "Formal",
+      "casual": "Casual",
+      "professional": "Professional"
+    },
+    "voices": {
+      "alloy": "Alloy",
+      "echo": "Echo",
+      "fable": "Fable",
+      "onyx": "Onyx",
+      "nova": "Nova",
+      "shimmer": "Shimmer"
+    }
+  },
+  "assistantPage":{
+    "greeting": "Hi, Name!",
+    "statusSpeaking": "Speaking...",
+    "statusListening": "Listening...",
+    "micStatusOff": "Your mic is off",
+    "micStatusOn": "Your mic is on",
+    "tipsTitle": "Tips",
+    "settings": "Settings",
+    "logout": "Log out",
+    "tips": {
+      "calendar": {
+        "title": "Connect your calendar",
+        "desc": "Create, delete and update your events just with voice"
+      },
+      "whatsapp": {
+        "title": "Connect your WhatsApp",
+        "desc": "Read and write to your friends messages with KeilOn"
+      }
+    }
   }
 }
